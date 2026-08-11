@@ -1,0 +1,47 @@
+name: Android quality gate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install pinned Android SDK components
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Check shell syntax and canonical script parity
+        run: |
+          bash -n app/src/main/assets/*.sh scripts/*.sh termux/*.sh
+          ./scripts/check_termux_scripts.sh
+
+      - name: Run ShellCheck
+        run: shellcheck app/src/main/assets/*.sh scripts/*.sh
+
+      - name: Test, lint, and build
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+
+      - name: Upload debug APK and lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appid-debug-verification
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore

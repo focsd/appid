@@ -1,0 +1,80 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseKeystore = System.getenv('FOCSD_APPID_KEYSTORE')
+def releaseKeyAlias = System.getenv('FOCSD_APPID_KEY_ALIAS')
+def releaseStorePassword = System.getenv('FOCSD_APPID_STORE_PASSWORD')
+def releaseKeyPassword = System.getenv('FOCSD_APPID_KEY_PASSWORD')
+def releaseSigningReady = [releaseKeystore, releaseKeyAlias, releaseStorePassword,
+                           releaseKeyPassword].every { it != null && !it.isBlank() }
+
+android {
+    namespace = 'com.focsd.appid'
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = 'com.focsd.appid'
+        minSdk = 26
+        targetSdk = 35
+        versionCode = 27
+        versionName = '0.10.1'
+    }
+
+    signingConfigs {
+        if (releaseSigningReady) {
+            release {
+                storeFile = file(releaseKeystore)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            if (releaseSigningReady) signingConfig = signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+        // UI copy is currently intentionally English-only and built programmatically.
+        disable += ['SetTextI18n']
+        // API 35 is the highest API officially supported by the pinned AGP 8.9 toolchain.
+        disable += ['OldTargetApi']
+    }
+}
+
+tasks.register('verifyReleaseSigning') {
+    group = 'verification'
+    description = 'Fails when required FOCSD release-signing variables are absent.'
+    doLast {
+        if (!releaseSigningReady) {
+            throw new GradleException('Release signing is not configured. Set ' +
+                    'FOCSD_APPID_KEYSTORE, FOCSD_APPID_KEY_ALIAS, ' +
+                    'FOCSD_APPID_STORE_PASSWORD, and FOCSD_APPID_KEY_PASSWORD.')
+        }
+    }
+}
+
+tasks.matching { it.name in ['assembleRelease', 'bundleRelease'] }.configureEach {
+    dependsOn tasks.named('verifyReleaseSigning')
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-Xlint:deprecation', '-Werror']
+}
+
+dependencies {
+    // The production APK remains Android-framework-only.
+    testImplementation 'junit:junit:4.13.2'
+}

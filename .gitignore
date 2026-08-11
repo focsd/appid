@@ -1,0 +1,21 @@
+# Android Studio and local SDK configuration
+.idea/
+*.iml
+local.properties
+
+# Gradle and generated outputs
+.gradle/
+**/build/
+artifacts/
+
+# Local agent/session data
+.codex-logs/
+
+# Signing secrets and generated credentials
+*.jks
+*.keystore
+*.pass
+
+# Operating-system files
+.DS_Store
+Thumbs.db
