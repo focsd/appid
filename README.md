@@ -5,6 +5,18 @@ A minimal Android utility that asks **Termux** to create, compile and sign tiny 
 Website: [focsd.com](https://focsd.com)  
 Android application ID: `com.focsd.appid`
 
+License: [MIT](LICENSE)
+
+Privacy: [AppId does not collect or transmit personal data](PRIVACY.md)
+
+F-Droid packaging: [release and submission guide](docs/FDROID.md)
+
+The main screen keeps the complete replacement form visible without mixing it with
+setup controls. Open the top-right menu for **Setup & tools**, **APK library**,
+**Installed apps**, and **About**. Setup & tools contains Termux onboarding,
+dependency status, operation progress, console logs, selected-app actions, and
+Android installation settings.
+
 It also includes a separate **Installed apps, App IDs, screen time & storage** view, adapted from the sibling AppIdViewer project. That view searches installed packages, optionally includes system apps, sorts by app name, App ID, today's screen time, or occupied space, copies visible IDs, opens Android App info on long-press, and displays today's per-app foreground time and occupied space when Usage Access is granted.
 
 The **Built APK library** keeps AppId's latest successful APK for each package ID. Library entries survive restarts and can be installed again, copied by App ID, deleted individually, or deleted together. Removing a library entry does not remove a separate APK previously copied into Termux Downloads.
@@ -16,11 +28,11 @@ The generated placeholder is intentionally small:
 - no Compose
 - no third-party libraries
 - no Internet permission
-- plain configurable background (`#F2F2F2` by default)
-- generated launcher icon using the title's first letter and selected color
-- centered placeholder title
+- neutral background
+- generated launcher icon using the selected app's first letter
+- selected app, personal reason, and replacement action
 - small `⋮` menu with **About** and **Close**
-- package ID supplied by the user
+- package ID taken from the selected installed app
 - one reusable signing key for all placeholders created by this installation
 
 ## Important: replacing an existing app
@@ -29,11 +41,12 @@ Android does **not** allow an APK signed by one certificate to update an install
 
 That means a placeholder cannot silently overwrite Spotify, Instagram, YouTube, etc. AppId uses the normal Android workflow:
 
-1. enter the original package ID;
-2. build the placeholder using that package ID;
-3. uninstall the original app through Android's normal uninstall confirmation;
-4. install the placeholder;
-5. later, to restore the original app, uninstall the placeholder and reinstall the original.
+1. choose the original app from the dropdown;
+2. enter why you are removing it and what you will do instead;
+3. tap **CREATE** to build the replacement using the original package ID;
+4. uninstall the original app through Android's normal uninstall confirmation;
+5. install the placeholder from the APK library;
+6. later, to restore the original app, uninstall the placeholder and reinstall the original.
 
 Uninstalling the original may remove its local app data. System/preinstalled apps may not be fully removable on an unmodified device.
 
@@ -105,11 +118,11 @@ apksigner
 zip
 ```
 
-The **Install / repair full environment** action is idempotent: it embeds the current builder and checker, installs missing Termux packages, downloads Android SDK Platform 35 with a pinned SHA-256 verification, prepares the reusable template and icon renderer, creates signing material, records environment schema version `4`, and automatically runs the dependency audit. If RUN_COMMAND is not usable yet, **Copy manual environment bootstrap** copies the same complete setup as a pasteable Termux command.
+The **Install / repair environment** action in **Setup & tools** is idempotent: it embeds the current builder and checker, installs missing Termux packages, downloads Android SDK Platform 35 with a pinned SHA-256 verification, prepares the reusable template and icon renderer, creates signing material, records environment schema version `5`, and automatically runs the dependency audit. If RUN_COMMAND is not usable yet, **Copy manual environment bootstrap** copies the same complete setup as a pasteable Termux command.
 
 For reproducible package installation, setup backs up the existing main `sources.list` as `sources.list.com.focsd.appid-backup`, selects Termux's primary package repository, and uses bounded download retries. If the primary repository fails, setup automatically retries against the official-listed Warsaw mirror.
 
-Use **Check all environment dependencies** at any time for a versioned report covering:
+Use **Check dependencies now** at any time for a versioned report covering:
 
 - Termux packages: `openjdk-21`, `aapt`, `d8`, `apksigner`, and `zip`;
 - every required command used by the build scripts;
@@ -130,15 +143,27 @@ Otherwise they remain under:
 
 ### 5. Allow AppId to install unknown apps
 
-AppId includes a shortcut to its own Android **Install unknown apps** page. This is required only for the `Build & install` flow. Termux no longer opens the installer, so Termux does not need this permission.
+AppId includes a shortcut to its own Android **Install unknown apps** page. This is required only when installing a generated APK from the library. Termux never opens the installer, so Termux does not need this permission.
 
 ## Building a placeholder
 
 Developers can exercise the complete placeholder pipeline on macOS before launching the Android app by running `./scripts/build_placeholder_macos.sh`. See [Build and run](docs/BUILD_AND_RUN.md#run-the-placeholder-creator-on-macos-first).
 
+## Building AppId for F-Droid
+
+The ordinary `assembleRelease` task produces an unsigned APK for F-Droid to sign:
+
+```sh
+./gradlew clean testDebugUnitTest lintRelease assembleRelease
+```
+
+Publisher-signed upstream builds use the separately guarded
+`assemblePublisherRelease` task and external signing environment variables. See the
+[F-Droid guide](docs/FDROID.md) and [release guide](docs/RELEASING.md).
+
 ## Installed apps, screen time and storage
 
-Open **Installed apps, App IDs, screen time & storage** from the top of AppId. The separate screen supports:
+Open **Installed apps** from AppId's top-right menu. The separate screen supports:
 
 - search by app name, App ID/package name, or UID;
 - ascending sort by app name or App ID, and descending sort by today's screen time or occupied space;
@@ -152,17 +177,18 @@ Android requires the user to grant AppId **Usage access** before other apps' for
 Example values:
 
 ```text
-Title:      Pause
-Package ID: com.instagram.android
-Background: #F2F2F2
+Replace: Instagram
+Why:     I want to finish writing my book.
+Instead: Read 2 pages
 ```
 
-These examples appear as input hints rather than entered text. Focusing a field gives you an empty editor; when the field is empty its default hint reappears. Building with an empty field uses the displayed default.
+The example reason and action are input hints rather than entered text. They disappear while typing and reappear whenever the field is empty.
+Installed AppId placeholders also appear in the dropdown with a `★` prefix, so they
+can be rebuilt with a new reason or replacement action.
 
 Tap:
 
-- **Build APK** — creates and signs the APK only.
-- **Build & install** — creates it in Termux, transfers the small APK in the command result, and asks AppId to open Android's package installer.
+- **CREATE** — creates and signs the replacement APK and adds it to the APK library.
 
 Every successful build is also transferred into AppId's private **Built APK library**. Rebuilding an existing package ID replaces its previous library APK with the newest build. The library distinguishes an installed AppId placeholder from a real app using the same package ID and offers Android-confirmed install and uninstall actions. After a placeholder is successfully installed and you return to AppId, it deletes its private installer APK and cache copy but keeps the installed placeholder visible. Uninstalling that placeholder removes the entry when no saved installer remains.
 
@@ -178,7 +204,7 @@ Console events are also appended to private daily files named `yyyy-MM-dd.log` u
 
 In Termux's result bundle, internal error value `-1` means there was no Termux service error. AppId displays this as `termuxInternalError=none`. Version `0.4.1` also rejects exit code `0` when setup ends before its final dependency audit, so an incomplete setup cannot be presented as successful.
 
-For **Build & install**, Termux returns the generated APK to AppId instead of using `termux-open`. This avoids Android blocking a background Termux process from launching an activity. AppId saves the transferred APK in its private cache, exposes only that file through a temporary read-only content URI, opens Android's installer, and listens for the target package to be added or replaced. A successful package broadcast changes the state to **APK installed**. A missing, invalid, or oversized transfer is reported as a failure instead of leaving the operation stuck. The external Android installer does not provide AppId a reliable cancellation callback, so a cancelled prompt remains **Awaiting Android installer** rather than being reported as a false success.
+Termux returns every generated APK to AppId instead of using `termux-open`. AppId validates it and saves it in the private APK library. When the user later chooses **Install**, AppId exposes only that file through a temporary read-only content URI and opens Android's confirmed package installer. A missing, invalid, or oversized transfer is reported as a build failure.
 
 If the original package is still installed, installation will normally fail because the signatures differ. Use **Uninstall target…** first if you deliberately want the placeholder to occupy that package ID.
 
@@ -186,10 +212,10 @@ If the original package is still installed, installation will normally fail beca
 
 The generated app has no app-specific resources or external dependencies. Its manifest stores:
 
-- title as Base64 metadata;
+- selected app title, reason, and replacement action as Base64 metadata;
 - six-digit background color as metadata.
 
-All placeholders reuse the same precompiled `TemplateActivity` bytecode and a locally generated signing key. At build time, the first Unicode letter or digit in the title is uppercased and drawn into a rounded 192×192 PNG using the selected background color. The renderer chooses light or dark lettering for contrast; titles without a letter or digit use `?`.
+All placeholders reuse the same precompiled `TemplateActivity` bytecode and a locally generated signing key. At build time, the first Unicode letter or digit in the selected app title is uppercased and drawn into a rounded 192×192 PNG. The replacement screen explains why the app was removed and emphasizes the chosen alternative action in uppercase.
 
 Generated placeholders currently declare:
 
@@ -259,7 +285,7 @@ Termux intentionally requires both:
 - the calling Android app to request `com.termux.permission.RUN_COMMAND`; and
 - `allow-external-apps=true` in Termux properties.
 
-This project uses the documented `com.termux.RUN_COMMAND` service and passes commands as argument arrays instead of constructing shell commands from the package/title fields.
+This project uses the documented `com.termux.RUN_COMMAND` service and passes commands as argument arrays instead of constructing shell commands from the selected app, reason, or action fields.
 
 ## References
 

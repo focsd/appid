@@ -11,15 +11,26 @@ wrapper distribution checksum. Run the same local checks as CI with:
 export JAVA_HOME="$HOME/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ./scripts/check_termux_scripts.sh
 shellcheck app/src/main/assets/*.sh scripts/*.sh
-./gradlew testDebugUnitTest lintDebug assembleDebug
+./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug assembleRelease
 ```
 
 `app/src/main/assets/` is the canonical Termux-script source. After editing one of
 those scripts, run `./scripts/sync_termux_scripts.sh`; CI rejects drift in the
 human-readable `termux/` copies. Lint treats new warnings as errors, excluding only
 the documented English-only programmatic UI text and the deliberate API 35 target.
-Release builds additionally require environment-backed signing credentials; see
+Publisher-signed builds additionally require environment-backed signing
+credentials; unsigned F-Droid release builds do not. See
 [RELEASING.md](RELEASING.md).
+
+## Changes in version 0.11.0
+
+The source tree is prepared for F-Droid: `assembleRelease` produces the unsigned APK
+expected by the F-Droid build service, publisher signing uses a separate guarded
+task, Android Build Tools 35.0.0 are pinned, and CI verifies both debug and release
+variants on JDK 17. Upstream Fastlane metadata now supplies the title, descriptions,
+icon, feature graphic, and version-code changelog. Privacy, permission rationale,
+public-repository, tag, and fdroiddata submission steps are documented separately in
+[FDROID.md](FDROID.md).
 
 ## Changes in version 0.10.1
 
@@ -28,7 +39,7 @@ The development environment is now reproducible and continuously checked: Gradle
 pinned SHA-256 checksum, the environment schema is version 4, canonical embedded
 scripts are synchronized into their readable copies, and CI runs Bash syntax,
 ShellCheck, unit tests, warning-strict Java compilation, Android lint, and the debug
-APK build. Release assembly now refuses to run without explicit external signing
+APK build. Publisher release tasks refuse to run without explicit external signing
 credentials. Pure input/formatting logic has unit coverage, Android backup excludes
 private state, and compatibility-only deprecated API calls are narrowly isolated.
 
@@ -124,10 +135,11 @@ The host preflight runs the same embedded builder used by Termux, including temp
 ./scripts/build_placeholder_macos.sh
 ```
 
-Optional positional arguments are title, package ID, and six-digit color:
+Optional positional arguments are title, package ID, six-digit color, reason, and replacement action:
 
 ```sh
-./scripts/build_placeholder_macos.sh "Focus" com.focsd.appid.preview 345995
+./scripts/build_placeholder_macos.sh "Instagram" com.focsd.appid.preview F2F2F2 \
+  "I want to finish writing my book." "Read 2 pages"
 ```
 
 The preview APK is written under:
@@ -158,7 +170,9 @@ Use `-s SERIAL` after `adb` in both commands when more than one device is connec
 
 ## Verified result
 
-On 2026-08-11, the current codebase was built with `assembleDebug`, installed alongside the legacy build on the connected `A142P` device (`000881487000711`), and launched successfully. Android reported:
+On 2026-08-11, version 0.10.1 was built with `assembleDebug`, installed alongside
+the legacy build on the connected `A142P` device (`000881487000711`), and launched
+successfully. Android reported:
 
 ```text
 package:     com.focsd.appid
@@ -170,12 +184,23 @@ targetSdk:   35
 launch:      cold, status ok
 ```
 
+Version 0.11.0 subsequently passed unit tests, debug and release lint, debug and
+unsigned-release assembly entirely offline. Two clean unsigned release builds were
+byte-identical. The device disconnected before the optional 0.11.0 smoke install;
+this does not affect the completed host release checks.
+
 ## App first-run requirements
 
-Building and launching AppId itself does not require Termux. Its APK-generation features do. Before using **Build APK** or **Build & install** on the phone, install a compatible F-Droid or official GitHub build and follow the Termux setup in the main [README](../README.md#first-run-on-the-phone), including enabling external apps, granting the Run Command permission, and installing the builder. The current Google Play build does not expose the required integration.
+Building and launching AppId itself does not require Termux. Its APK-generation features do. Before using **CREATE** on the phone, install a compatible F-Droid or official GitHub build and follow the Termux setup in the main [README](../README.md#first-run-on-the-phone), including enabling external apps, granting the Run Command permission, and installing the builder. The current Google Play build does not expose the required integration.
 
 AppId checks for both `com.termux.permission.RUN_COMMAND` and `com.termux.app.RunCommandService`. If either is absent, it labels RUN_COMMAND support unavailable and links to the official Termux installation guide instead of opening a permission page that cannot grant the missing permission.
 
 Setup and placeholder builds use `RUN_COMMAND_BACKGROUND=true`. They do not create interactive terminal sessions and therefore do not require Termux's **Display over other apps** permission.
 
 Each operation receives a random progress token. The Termux scripts send package-scoped stage updates back to the running AppId screen, and the app ignores updates that do not match the active token. The progress panel ends with either **APK ready**, **Setup complete**, or **Failed**.
+
+The creator and setup interfaces are persistent sibling views in `MainActivity`.
+The fixed creator view retains the selected app and typed reason/action while the
+scrollable **Setup & tools** view owns environment controls, detailed progress,
+console logs, target-app actions, and Android settings. Overflow-menu actions open
+Setup & tools, the APK library, installed-app inventory, and About.

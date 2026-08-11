@@ -4,7 +4,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 ROOT="$HOME/.com.focsd.appid"
-ENVIRONMENT_VERSION="4"
+ENVIRONMENT_VERSION="5"
 PROGRESS_TOKEN="${1:-}"
 BUILDER_B64="${2:-}"
 CHECKER_B64="${3:-}"

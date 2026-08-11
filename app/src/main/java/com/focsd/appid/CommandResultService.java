@@ -84,6 +84,7 @@ public class CommandResultService extends Service {
                         operation.getString(OperationStore.KEY_BUILD_TITLE, ""),
                         operation.getString(OperationStore.KEY_BUILD_COLOR, ""));
                 libraryFile = saved.file;
+                OperationStore.markNewApk(this);
                 stdout += "\nSaved in AppId built APK library: " + saved.packageName + "\n";
             } catch (IOException error) {
                 success = false;

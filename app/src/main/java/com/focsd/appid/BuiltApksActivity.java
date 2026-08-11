@@ -50,6 +50,7 @@ public final class BuiltApksActivity extends Activity {
     protected void onResume() {
         super.onResume();
         reload();
+        OperationStore.markApkLibrarySeen(this);
     }
 
     private View buildUi() {

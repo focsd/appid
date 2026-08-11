@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - uses: android-actions/setup-android@v3
 
@@ -33,15 +33,17 @@ jobs:
       - name: Run ShellCheck
         run: shellcheck app/src/main/assets/*.sh scripts/*.sh
 
-      - name: Test, lint, and build
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Test, lint, and build debug and unsigned release APKs
+        run: ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug assembleRelease --stacktrace
 
-      - name: Upload debug APK and lint report
+      - name: Upload verification APKs and lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: appid-debug-verification
+          name: appid-verification
           path: |
             app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
             app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-release.html
           if-no-files-found: ignore

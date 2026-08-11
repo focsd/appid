@@ -12,13 +12,15 @@ def releaseSigningReady = [releaseKeystore, releaseKeyAlias, releaseStorePasswor
 android {
     namespace = 'com.focsd.appid'
     compileSdk = 35
+    // Keep APK generation stable across upstream and F-Droid build environments.
+    buildToolsVersion = '35.0.0'
 
     defaultConfig {
         applicationId = 'com.focsd.appid'
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = '0.10.1'
+        versionCode = 28
+        versionName = '0.11.0'
     }
 
     signingConfigs {
@@ -35,6 +37,8 @@ android {
     buildTypes {
         release {
             minifyEnabled = false
+            // Keep release APK bytes independent of the source commit/tag hash.
+            vcsInfo.include = false
             if (releaseSigningReady) signingConfig = signingConfigs.release
         }
     }
@@ -66,8 +70,18 @@ tasks.register('verifyReleaseSigning') {
     }
 }
 
-tasks.matching { it.name in ['assembleRelease', 'bundleRelease'] }.configureEach {
+tasks.register('assemblePublisherRelease') {
+    group = 'build'
+    description = 'Builds a release with the externally configured FOCSD signing key.'
     dependsOn tasks.named('verifyReleaseSigning')
+    dependsOn tasks.named('assembleRelease')
+}
+
+tasks.register('bundlePublisherRelease') {
+    group = 'build'
+    description = 'Builds an app bundle with the externally configured FOCSD signing key.'
+    dependsOn tasks.named('verifyReleaseSigning')
+    dependsOn tasks.named('bundleRelease')
 }
 
 tasks.withType(JavaCompile).configureEach {

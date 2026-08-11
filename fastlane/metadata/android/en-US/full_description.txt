@@ -1,0 +1,16 @@
+AppId is an on-device utility for building small placeholder Android applications through Termux.
+
+Choose an installed app, write why you are removing it, and choose what you will do instead. AppId builds a signed replacement APK that displays that commitment when opened. AppId also shows live setup and build progress, keeps daily Termux logs, audits every required dependency, and maintains a local library of generated APKs. Installation and uninstallation always use Android's confirmation screens.
+
+The separate installed-app viewer can search and sort applications by name, application ID, today's screen time, or occupied storage. Screen-time and storage information is processed locally and is available only after the user explicitly grants Android Usage Access.
+
+Features:
+* Reproducible, checksum-verified Termux environment setup
+* Live build stages and scrollable Termux console output
+* Generated launcher icons based on each placeholder's first character
+* Local APK library with install, uninstall, and cleanup actions
+* Installed-app and application-ID inventory
+* Screen-time and occupied-storage sorting
+* No ads, analytics, tracking, or Internet permission
+
+AppId requires a compatible F-Droid or official GitHub build of Termux for APK-building features. Viewing installed apps does not require Termux.

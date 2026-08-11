@@ -23,6 +23,9 @@ final class OperationStore {
     static final String KEY_INSTALL_OBSERVED = "install_observed";
     static final String KEY_BUILD_TITLE = "build_title";
     static final String KEY_BUILD_COLOR = "build_color";
+    static final String KEY_NEW_APK = "new_apk";
+    static final String KEY_LATEST_APK_SEQUENCE = "latest_apk_sequence";
+    static final String KEY_SEEN_APK_SEQUENCE = "seen_apk_sequence";
     static final String KEY_UPDATED_AT = "updated_at";
 
     private static final int MAX_CONSOLE_CHARS = 100_000;
@@ -242,6 +245,47 @@ final class OperationStore {
 
     static synchronized SharedPreferences snapshot(Context context) {
         return prefs(context);
+    }
+
+    static synchronized void markNewApk(Context context) {
+        SharedPreferences preferences = prefs(context);
+        long previous = preferences.getLong(KEY_LATEST_APK_SEQUENCE, 0L);
+        long next = UiStateRules.nextApkSequence(previous, System.currentTimeMillis());
+        preferences.edit()
+                .putLong(KEY_LATEST_APK_SEQUENCE, next)
+                .putBoolean(KEY_NEW_APK, false)
+                .apply();
+    }
+
+    static synchronized boolean hasNewApk(Context context) {
+        SharedPreferences preferences = prefs(context);
+        return preferences.getBoolean(KEY_NEW_APK, false) || UiStateRules.hasUnreadApk(
+                preferences.getLong(KEY_LATEST_APK_SEQUENCE, 0L),
+                preferences.getLong(KEY_SEEN_APK_SEQUENCE, 0L));
+    }
+
+    static synchronized void markApkLibrarySeen(Context context) {
+        SharedPreferences preferences = prefs(context);
+        preferences.edit()
+                .putLong(KEY_SEEN_APK_SEQUENCE,
+                        preferences.getLong(KEY_LATEST_APK_SEQUENCE, 0L))
+                .putBoolean(KEY_NEW_APK, false)
+                .apply();
+    }
+
+    static synchronized void settleAwaitingInstaller(Context context) {
+        SharedPreferences preferences = prefs(context);
+        if (!UiStateRules.shouldSettleAwaitingInstaller(
+                preferences.getString(KEY_STATE, ""))) return;
+        preferences.edit()
+                .putString(KEY_STATE, "success")
+                .putString(KEY_STAGE, "APK saved")
+                .putString(KEY_DETAIL,
+                        "The Android installer closed without a confirmed install. The APK remains in the library.")
+                .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+                .apply();
+        appendConsole(context, timestamp() +
+                "  INSTALL NOT CONFIRMED — APK remains saved in the library\n");
     }
 
     static synchronized void clearConsole(Context context) {

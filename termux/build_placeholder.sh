@@ -13,6 +13,8 @@ ALIAS="focsd-appid"
 
 PACKAGE_ID=""
 TITLE_B64=""
+REASON_B64=""
+ACTION_B64=""
 COLOR_HEX="F2F2F2"
 INSTALL_AFTER=0
 PREPARE_ONLY=0
@@ -44,7 +46,7 @@ usage() {
 AppId placeholder builder
 
 Usage:
-  build_placeholder.sh --package com.example.app --title-b64 BASE64 --color F2F2F2 [--install 0|1]
+  build_placeholder.sh --package com.example.app --title-b64 BASE64 --reason-b64 BASE64 --action-b64 BASE64 --color F2F2F2 [--install 0|1]
   build_placeholder.sh --prepare-only
 USAGE
 }
@@ -57,6 +59,14 @@ while [ "$#" -gt 0 ]; do
             ;;
         --title-b64)
             TITLE_B64="${2:-}"
+            shift 2
+            ;;
+        --reason-b64)
+            REASON_B64="${2:-}"
+            shift 2
+            ;;
+        --action-b64)
+            ACTION_B64="${2:-}"
             shift 2
             ;;
         --color)
@@ -144,13 +154,17 @@ import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.UnsupportedEncodingException;
 
 public final class TemplateActivity extends Activity {
     private String placeholderTitle = "Pause";
+    private String reason = "I want to focus on what matters.";
+    private String replacementAction = "DO SOMETHING BETTER";
     private String colorHex = "F2F2F2";
 
     @Override
@@ -168,9 +182,13 @@ public final class TemplateActivity extends Activity {
             if (meta == null) return;
 
             String titleB64 = meta.getString("app.placeholder.titleB64", "UGF1c2U=");
+            String reasonB64 = meta.getString("app.placeholder.reasonB64", "");
+            String actionB64 = meta.getString("app.placeholder.actionB64", "");
             colorHex = meta.getString("app.placeholder.color", "F2F2F2");
             try {
                 placeholderTitle = new String(Base64.decode(titleB64, Base64.DEFAULT), "UTF-8");
+                reason = decodeOrDefault(reasonB64, reason);
+                replacementAction = decodeOrDefault(actionB64, replacementAction);
             } catch (UnsupportedEncodingException ignored) {
                 placeholderTitle = "Pause";
             }
@@ -189,18 +207,40 @@ public final class TemplateActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(background);
 
-        TextView title = new TextView(this);
-        title.setText(placeholderTitle);
-        title.setTextSize(30f);
-        title.setTextColor(Color.rgb(55, 55, 55));
-        title.setTypeface(Typeface.DEFAULT, Typeface.NORMAL);
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(dp(28), dp(28), dp(28), dp(28));
-        FrameLayout.LayoutParams titleParams = new FrameLayout.LayoutParams(
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_VERTICAL);
+        content.setPadding(dp(30), dp(76), dp(30), dp(48));
+        scroll.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.MATCH_PARENT));
+        root.addView(scroll, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER);
-        root.addView(title, titleParams);
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
+        TextView reasonHeading = messageText("You removed " + placeholderTitle + " because:", 22f);
+        content.addView(reasonHeading);
+
+        TextView reasonText = messageText("\"" + reason + "\"", 20f);
+        reasonText.setTypeface(Typeface.DEFAULT, Typeface.ITALIC);
+        LinearLayout.LayoutParams reasonParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        reasonParams.setMargins(0, dp(24), 0, dp(34));
+        content.addView(reasonText, reasonParams);
+
+        TextView insteadHeading = messageText("Instead:", 22f);
+        content.addView(insteadHeading);
+
+        TextView actionText = messageText(replacementAction.toUpperCase(java.util.Locale.ROOT), 28f);
+        actionText.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        actionParams.setMargins(0, dp(22), 0, 0);
+        content.addView(actionText, actionParams);
 
         TextView menu = new TextView(this);
         menu.setText("⋮");
@@ -227,7 +267,7 @@ public final class TemplateActivity extends Activity {
                     if ("About".equals(label)) {
                         new AlertDialog.Builder(TemplateActivity.this)
                                 .setTitle(placeholderTitle)
-                                .setMessage("A lightweight local placeholder for " + getPackageName() + ".\n\nCreated with AppId.")
+                                .setMessage("You chose to replace this app with:\n\n" + replacementAction + "\n\nCreated with AppId.")
                                 .setPositiveButton("OK", null)
                                 .show();
                         return true;
@@ -252,6 +292,22 @@ public final class TemplateActivity extends Activity {
             getWindow().setStatusBarColor(darken(background, 0.90f));
             getWindow().setNavigationBarColor(darken(background, 0.90f));
         }
+    }
+
+    private String decodeOrDefault(String encoded, String fallback)
+            throws UnsupportedEncodingException {
+        if (encoded == null || encoded.isEmpty()) return fallback;
+        String decoded = new String(Base64.decode(encoded, Base64.DEFAULT), "UTF-8").trim();
+        return decoded.isEmpty() ? fallback : decoded;
+    }
+
+    private TextView messageText(String value, float size) {
+        TextView text = new TextView(this);
+        text.setText(value);
+        text.setTextSize(size);
+        text.setTextColor(Color.rgb(55, 55, 55));
+        text.setGravity(Gravity.CENTER_HORIZONTAL);
+        return text;
     }
 
     private int darken(int color, float factor) {
@@ -441,8 +497,11 @@ prepare_icon_generator() {
 prepare_template() {
     local source="$TEMPLATE_DIR/src/app/placeholder/TemplateActivity.java"
     local dex="$TEMPLATE_DIR/dex/classes.dex"
+    local version_file="$TEMPLATE_DIR/template-version"
+    local template_version="2"
 
-    if [ -f "$dex" ] && [ -f "$source" ]; then
+    if [ -s "$dex" ] && [ -f "$source" ] && [ -f "$version_file" ] &&
+            [ "$(tr -d '\r\n' < "$version_file")" = "$template_version" ]; then
         return 0
     fi
 
@@ -470,6 +529,7 @@ prepare_template() {
         printf 'ERROR: D8 did not create classes.dex.\n' >&2
         exit 12
     fi
+    printf '%s\n' "$template_version" > "$version_file"
 }
 
 ensure_signing_key() {
@@ -509,7 +569,7 @@ if [ "$PREPARE_ONLY" = "1" ]; then
     exit 0
 fi
 
-progress "Validating" "Checking the package ID, title, color, and tools…"
+progress "Validating" "Checking the selected app, reason, replacement action, and tools…"
 if ! [[ "$PACKAGE_ID" =~ ^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$ ]]; then
     printf 'ERROR: invalid package ID: %s\n' "$PACKAGE_ID" >&2
     exit 20
@@ -521,6 +581,14 @@ fi
 if [ -z "$TITLE_B64" ]; then
     printf 'ERROR: missing title.\n' >&2
     exit 22
+fi
+if [ -z "$REASON_B64" ] || ! printf '%s' "$REASON_B64" | base64 -d >/dev/null 2>&1; then
+    printf 'ERROR: reason is missing or is not valid base64.\n' >&2
+    exit 25
+fi
+if [ -z "$ACTION_B64" ] || ! printf '%s' "$ACTION_B64" | base64 -d >/dev/null 2>&1; then
+    printf 'ERROR: replacement action is missing or is not valid base64.\n' >&2
+    exit 26
 fi
 if ! printf '%s' "$TITLE_B64" | base64 -d >/dev/null 2>&1; then
     printf 'ERROR: title is not valid base64.\n' >&2
@@ -583,6 +651,12 @@ cat > "$MANIFEST" <<MANIFEST
         <meta-data
             android:name="app.placeholder.titleB64"
             android:value="$TITLE_B64" />
+        <meta-data
+            android:name="app.placeholder.reasonB64"
+            android:value="$REASON_B64" />
+        <meta-data
+            android:name="app.placeholder.actionB64"
+            android:value="$ACTION_B64" />
         <meta-data
             android:name="app.placeholder.color"
             android:value="$COLOR_HEX" />

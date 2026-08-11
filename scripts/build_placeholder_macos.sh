@@ -5,6 +5,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TITLE="${1:-Pause}"
 PACKAGE_ID="${2:-com.focsd.appid.macospreview}"
 COLOR_HEX="${3:-345995}"
+REASON="${4:-I want to focus on what matters.}"
+ACTION="${5:-Read 2 pages}"
 HOST_STATE="$PROJECT_ROOT/build/com.focsd.appid-placeholder"
 HOST_OUTPUT="$PROJECT_ROOT/artifacts/com.focsd.appid-placeholder"
 BUILDER="$PROJECT_ROOT/app/src/main/assets/build_placeholder.sh"
@@ -45,6 +47,8 @@ mkdir -p "$HOST_STATE" "$HOST_OUTPUT"
 cp -f "$PLATFORM_JAR" "$HOST_STATE/android.jar"
 
 TITLE_B64="$(printf '%s' "$TITLE" | base64 | tr -d '\r\n')"
+REASON_B64="$(printf '%s' "$REASON" | base64 | tr -d '\r\n')"
+ACTION_B64="$(printf '%s' "$ACTION" | base64 | tr -d '\r\n')"
 export JAVA_HOME="$JDK_HOME"
 export PATH="$JDK_HOME/bin:$BUILD_TOOLS:$PATH"
 
@@ -54,6 +58,8 @@ PREFIX="$HOST_STATE/host-prefix" \
 bash "$BUILDER" \
     --package "$PACKAGE_ID" \
     --title-b64 "$TITLE_B64" \
+    --reason-b64 "$REASON_B64" \
+    --action-b64 "$ACTION_B64" \
     --color "$COLOR_HEX" \
     --install 0
 
@@ -89,3 +95,5 @@ printf 'APK: %s\n' "$FINAL_APK"
 printf 'Size: %s bytes\n' "$APK_BYTES"
 printf 'Package: %s\n' "$PACKAGE_ID"
 printf 'Title: %s\n' "$TITLE"
+printf 'Reason: %s\n' "$REASON"
+printf 'Instead: %s\n' "$ACTION"

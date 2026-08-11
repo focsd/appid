@@ -3,7 +3,7 @@ set -u
 
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 ROOT="$HOME/.com.focsd.appid"
-EXPECTED_ENVIRONMENT_VERSION="4"
+EXPECTED_ENVIRONMENT_VERSION="5"
 PROGRESS_TOKEN="${1:-}"
 REPORT=""
 MISSING=0
@@ -98,6 +98,12 @@ else
 fi
 artifact_status "builder" "$ROOT/build_placeholder.sh"
 artifact_status "template DEX" "$ROOT/template/dex/classes.dex"
+if [ -f "$ROOT/template/template-version" ] &&
+        [ "$(tr -d '\r\n' < "$ROOT/template/template-version")" = "2" ]; then
+    append "OK       replacement template: version 2"
+else
+    mark_missing "replacement template version 2 (run repair)"
+fi
 if [ -s "$ROOT/template/icon-generator/com/focsd/appid/icon/IconGenerator.class" ] &&
         [ -f "$ROOT/template/icon-generator-version" ] &&
         [ "$(tr -d '\r\n' < "$ROOT/template/icon-generator-version")" = "2" ]; then

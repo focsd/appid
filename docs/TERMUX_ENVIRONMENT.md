@@ -8,7 +8,7 @@ AppId carries the scripts needed to create and audit its phone-side Android buil
 2. Grant AppId the Termux `RUN_COMMAND` permission.
 3. Tap **Install / repair full environment**.
 4. Keep AppId open to see the setup stages.
-5. Setup automatically runs the audit; tap **Check all environment dependencies** later to refresh it on demand.
+5. Setup automatically runs the audit; open **Setup & tools** and tap **Check dependencies now** later to refresh it on demand.
 
 If command integration is not ready, **Copy manual environment bootstrap** copies the same embedded setup and builder as one Base64-backed shell command. Paste it into Termux to reproduce the environment manually.
 
@@ -27,7 +27,7 @@ template/dex/classes.dex
 template/icon-generator/com/focsd/appid/icon/IconGenerator.class
 ```
 
-Environment schema `4` requires the Termux packages `openjdk-21`, `aapt`, `d8`, `apksigner`, and `zip`, launcher-icon renderer version `2`, and SHA-256 verification support for the pinned Android platform archive. Setup skips package downloads when the required commands and Android platform JAR already exist, but it always refreshes the embedded builder and repairs generated artifacts. The renderer writes its built-in pixel glyphs directly into a PNG buffer, so no system font, Fontconfig setup, or image-processing package is needed.
+Environment schema `5` requires the Termux packages `openjdk-21`, `aapt`, `d8`, `apksigner`, and `zip`, replacement template version `2`, launcher-icon renderer version `2`, and SHA-256 verification support for the pinned Android platform archive. Setup skips package downloads when the required commands and Android platform JAR already exist, but it always refreshes the embedded builder and repairs generated artifacts. The renderer writes its built-in pixel glyphs directly into a PNG buffer, so no system font, Fontconfig setup, or image-processing package is needed.
 
 ## Audit behavior
 
@@ -39,6 +39,6 @@ Every operation has a random ID and persistent state. Package setup sends thrott
 
 The app accepts progress only when its random token matches the current operation. Only one environment or build operation can be started at a time. After setup completes, the embedded checker refreshes dependency status automatically.
 
-For **Build & install**, the builder Base64-encodes the small APK into Termux's official command result. AppId validates and stores it in private cache, then opens Android's package installer through an app-owned, read-only content URI. This replaces `termux-open`, which Android can prevent from launching UI when Termux is in the background. AppId watches for the requested package to be added or replaced and then reports **APK installed**. Android's external installer does not reliably return cancellation to the calling workflow, so cancellation remains an awaiting state.
+The builder Base64-encodes the small APK into Termux's official command result. AppId validates it and stores it in the private APK library. A later user-requested install opens Android's package installer through an app-owned, read-only content URI. This replaces `termux-open`, which Android can prevent from launching UI when Termux is in the background.
 
 Android itself still controls installation-source compatibility, the RUN_COMMAND grant, shared-storage consent, and unknown-app installation consent. AppId can guide or open the relevant settings but cannot reproduce or silently grant those user-controlled permissions.
