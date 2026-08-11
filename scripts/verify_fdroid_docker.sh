@@ -65,6 +65,7 @@ FDROID_SOURCE_COMMIT=$remote_commit \
 cp "$repo_root/docker/fdroid/categories.yml" "$temp_root/config/categories.yml"
 printf 'sdk_path: /opt/android-sdk\n' >"$temp_root/config.yml"
 
+docker_log="$temp_root/fdroid-build.log"
 docker run --rm --platform linux/amd64 \
     --volume "$temp_root:/build" \
     --workdir /build \
@@ -74,10 +75,18 @@ docker run --rm --platform linux/amd64 \
         fdroid rewritemeta com.focsd.appid
         fdroid lint com.focsd.appid
         git clone --no-checkout https://github.com/focsd/appid.git build/com.focsd.appid
-        fdroid build --verbose --test --no-tarball com.focsd.appid:$version_code"
+        fdroid build --verbose --test --no-tarball com.focsd.appid:$version_code" \
+    | tee "$docker_log"
 
 docker_apk="$temp_root/tmp/com.focsd.appid_${version_code}.apk"
 [ -s "$docker_apk" ] || release_die "F-Droid APK not found: $docker_apk"
+reference_apk="$temp_root/tmp/binaries/com.focsd.appid_${version_code}.binary.apk"
+[ -s "$reference_apk" ] \
+    || release_die 'F-Droid did not download the publisher reference APK'
+grep -Fq 'compared built binary to supplied reference binary successfully' "$docker_log" \
+    || release_die 'F-Droid did not verify the publisher APK against its build'
+grep -Fq "supplied reference binary has allowed signer" "$docker_log" \
+    || release_die 'F-Droid did not accept the publisher signing key'
 docker_hash=$(release_sha256 "$docker_apk")
 [ "$docker_hash" = "$local_hash" ] \
     || release_die "Docker/F-Droid APK differs: $docker_hash != $local_hash"
