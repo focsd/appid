@@ -75,7 +75,7 @@ docker run --rm --platform linux/amd64 \
         fdroid rewritemeta com.focsd.appid
         fdroid lint com.focsd.appid
         git clone --no-checkout https://github.com/focsd/appid.git build/com.focsd.appid
-        fdroid build --verbose --test --no-tarball com.focsd.appid:$version_code" \
+        fdroid build --verbose --test --no-tarball com.focsd.appid:$version_code" 2>&1 \
     | tee "$docker_log"
 
 docker_apk="$temp_root/tmp/com.focsd.appid_${version_code}.apk"
