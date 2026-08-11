@@ -18,6 +18,12 @@ common signing-file extensions, but secrets should still live in a password mana
 or CI secret store. Back up the release key securely: losing it prevents normal
 updates to an already distributed application.
 
+The permanent AppId publisher certificate SHA-256 is
+`be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a286dbbc`.
+Publisher APK assets must be named `AppId-v<versionName>.apk`; this stable naming is
+used by fdroiddata's `Binaries` URL for reproducible-build verification. Never
+replace a published APK with a build signed by another key.
+
 Before publication, confirm the version code is greater than the last release,
 review the lint report, verify the APK signature, install the release APK on a test
 device, and exercise Termux setup, build, library install/uninstall, Usage Access,
@@ -26,3 +32,10 @@ and unknown-source permission flows.
 F-Droid releases use `./gradlew assembleRelease` without signing variables. The
 result is `app/build/outputs/apk/release/app-release-unsigned.apk`; F-Droid applies
 its repository signing key after rebuilding the tagged public source.
+
+For normal F-Droid releases, use the reproducible preparation, double-build,
+Docker/F-Droid, metadata, and guarded tagging scripts documented in
+[FDROID.md](FDROID.md). The
+verification script explicitly removes all four publisher-signing variables from
+the Gradle process so an unsigned F-Droid candidate cannot accidentally inherit a
+developer's signing environment.

@@ -38,28 +38,68 @@ The canonical public source repository is
 `https://github.com/focsd/appid.git`. The release gate must be repeated against
 the published tag before submitting to fdroiddata.
 
-## Upstream release checklist
+## Reproducible next-release workflow
 
-1. Run the full release gate from a clean checkout:
+The checked-in release scripts read `versionName` and `versionCode` directly from
+`app/build.gradle`; version numbers are never duplicated in shell configuration.
+Start from a clean `main` branch and prepare the next version with a reviewed,
+plain-text changelog:
 
-   ```sh
-   ./scripts/check_termux_scripts.sh
-   bash -n app/src/main/assets/*.sh scripts/*.sh termux/*.sh
-   shellcheck app/src/main/assets/*.sh scripts/*.sh termux/*.sh
-   ./gradlew clean testDebugUnitTest lintDebug lintRelease assembleRelease
-   ```
+```sh
+./scripts/prepare_fdroid_release.sh 0.12.0 30 /path/to/0.12.0.txt
+git diff --check
+git diff
+git add app/build.gradle fastlane/metadata/android/en-US/changelogs/30.txt
+git commit -m "Release AppId 0.12.0"
+```
 
-2. Confirm that the unsigned APK is at
-   `app/build/outputs/apk/release/app-release-unsigned.apk`.
-3. Commit the release, then create and push an annotated tag matching versionName:
+Run the complete gate. It checks script parity and syntax, runs ShellCheck, unit
+tests and both lint variants, forces publisher signing variables off, builds the
+unsigned APK twice from clean outputs, and requires identical SHA-256 results:
 
-   ```sh
-   git tag -a v0.11.0 -m "AppId 0.11.0"
-   git push origin main v0.11.0
-   ```
+```sh
+./scripts/verify_fdroid_release.sh
+```
 
-Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK.
-Publisher signing secrets must never be added to either repository.
+The verified APK, checksum, and source-provenance record are written to the ignored
+`artifacts/` directory. Tagging rejects an artifact built from a dirty tree or a
+different commit. Preview and then create/publish the annotated tag:
+
+```sh
+./scripts/tag_fdroid_release.sh
+./scripts/tag_fdroid_release.sh --create
+./scripts/tag_fdroid_release.sh --push
+```
+
+`--push` is the only release-script action that changes the remote repository.
+After publishing, repeat the gate from the exact public tag rather than the working
+tree:
+
+```sh
+git fetch origin tag v0.12.0
+./scripts/verify_fdroid_release.sh --ref v0.12.0
+./scripts/verify_fdroid_docker.sh --ref v0.12.0
+```
+
+The Docker gate builds a reusable image from the SHA-256-pinned official F-Droid
+buildserver base, installs the pinned Android Platform/Build Tools 35 toolchain,
+runs `fdroid readmeta`, rewrite and lint, then performs the real
+`fdroid build --test` against the public tag. It requires the Docker APK hash to
+equal the locally double-built APK hash. Use `--rebuild-image` when deliberately
+refreshing the derived environment; `FDROID_RELEASE_IMAGE` can select a reviewed
+replacement image.
+
+The `AutoUpdateMode: Version` configuration lets F-Droid detect the new `v0.12.0`
+tag. If maintainers request a manual metadata update, render a schema-correct full
+file or just the new build/current-version block with:
+
+```sh
+./scripts/render_fdroid_metadata.sh
+./scripts/render_fdroid_metadata.sh --build-block
+```
+
+Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK;
+publisher signing secrets must never be added to either repository.
 
 ## fdroiddata candidate
 
@@ -77,18 +117,23 @@ SourceCode: https://github.com/focsd/appid
 IssueTracker: https://github.com/focsd/appid/issues
 Changelog: https://github.com/focsd/appid/releases
 
+AutoName: AppId
+
 RepoType: git
 Repo: https://github.com/focsd/appid.git
+Binaries: https://github.com/focsd/appid/releases/download/v%v/AppId-v%v.apk
 
 Builds:
   - versionName: 0.11.0
     versionCode: 28
-    commit: v0.11.0
+    commit: 6f2777bc3ba68a057ce5c0338e12eade0091ec7c
     subdir: app
     gradle:
       - yes
 
-AutoUpdateMode: Version v%v
+AllowedAPKSigningKeys: be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a286dbbc
+
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
 CurrentVersion: 0.11.0
 CurrentVersionCode: 28

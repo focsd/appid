@@ -32,6 +32,7 @@ jobs:
         run: |
           bash -n app/src/main/assets/*.sh scripts/*.sh termux/*.sh
           ./scripts/check_termux_scripts.sh
+          ./scripts/verify_fdroid_release.sh --metadata-only
 
       - name: Run ShellCheck
         run: shellcheck app/src/main/assets/*.sh scripts/*.sh

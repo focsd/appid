@@ -15,12 +15,19 @@ android {
     // Keep APK generation stable across upstream and F-Droid build environments.
     buildToolsVersion = '35.0.0'
 
+    dependenciesInfo {
+        // F-Droid rejects the Google Play SDK dependency payload as an extra
+        // APK signing block. The app has no production third-party dependencies.
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = 'com.focsd.appid'
         minSdk = 26
         targetSdk = 35
-        versionCode = 28
-        versionName = '0.11.0'
+        versionCode = 29
+        versionName = '0.11.1'
     }
 
     signingConfigs {

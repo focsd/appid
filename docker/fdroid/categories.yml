@@ -1,0 +1,4 @@
+# Minimal official category catalog needed by the isolated metadata lint gate.
+Development:
+  name: Development
+  description: Coding, programming, IDE, terminal, and developer tools

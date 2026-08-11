@@ -1,0 +1,1 @@
+Improved reproducible F-Droid releases by removing nonessential SDK dependency metadata from APK signing blocks. Added guarded release preparation, verification, Docker/F-Droid build, metadata, and tagging scripts.
