@@ -2,9 +2,12 @@
 
 A minimal Android utility that asks **Termux** to create, compile and sign tiny placeholder APKs directly on an Android phone. AppId then opens Android's package installer when requested.
 
-Website: [focsd.com](https://focsd.com)  
-Source: [github.com/focsd/appid](https://github.com/focsd/appid)  
-Issues: [github.com/focsd/appid/issues](https://github.com/focsd/appid/issues)  
+Website: [focsd.com](https://focsd.com)
+
+Source: [github.com/focsd/appid](https://github.com/focsd/appid)
+
+Issues: [github.com/focsd/appid/issues](https://github.com/focsd/appid/issues)
+
 Android application ID: `com.focsd.appid`
 
 License: [MIT](LICENSE)
