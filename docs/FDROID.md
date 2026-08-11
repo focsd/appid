@@ -34,16 +34,13 @@ The validation APK's SHA-256 was
 Release VCS metadata is disabled so documentation-only commits do not change the
 APK bytes.
 
-The validation used a local tagged source snapshot in place of the future public
-HTTPS repository. Repeat the checks against the published tag before submitting
-to fdroiddata.
+The canonical public source repository is
+`https://github.com/focsd/appid.git`. The release gate must be repeated against
+the published tag before submitting to fdroiddata.
 
 ## Upstream release checklist
 
-1. Publish this complete source tree in a public Git repository.
-2. Set the repository's origin URL and replace `REPOSITORY_URL` in the fdroiddata
-   template below with its HTTPS clone URL.
-3. Run the full release gate from a clean checkout:
+1. Run the full release gate from a clean checkout:
 
    ```sh
    ./scripts/check_termux_scripts.sh
@@ -52,22 +49,21 @@ to fdroiddata.
    ./gradlew clean testDebugUnitTest lintDebug lintRelease assembleRelease
    ```
 
-4. Confirm that the unsigned APK is at
+2. Confirm that the unsigned APK is at
    `app/build/outputs/apk/release/app-release-unsigned.apk`.
-5. Commit the release, then create and push an annotated tag matching versionName:
+3. Commit the release, then create and push an annotated tag matching versionName:
 
    ```sh
    git tag -a v0.11.0 -m "AppId 0.11.0"
    git push origin main v0.11.0
    ```
 
-Do not tag a dirty tree or tag before the public repository contains this release.
-F-Droid checks out the tag and signs its own rebuilt APK. Publisher signing secrets
-must never be added to either repository.
+Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK.
+Publisher signing secrets must never be added to either repository.
 
 ## fdroiddata candidate
 
-After the public URL and tag exist, use this as the starting point for
+Use this as the starting point for
 `metadata/com.focsd.appid.yml` in an fdroiddata merge request:
 
 ```yaml
@@ -77,11 +73,12 @@ License: MIT
 AuthorName: FOCSD
 AuthorWebSite: https://focsd.com
 WebSite: https://focsd.com
-SourceCode: REPOSITORY_URL
-IssueTracker: REPOSITORY_URL/issues
+SourceCode: https://github.com/focsd/appid
+IssueTracker: https://github.com/focsd/appid/issues
+Changelog: https://github.com/focsd/appid/releases
 
 RepoType: git
-Repo: REPOSITORY_URL
+Repo: https://github.com/focsd/appid.git
 
 Builds:
   - versionName: 0.11.0
