@@ -104,10 +104,10 @@ fi
 artifact_status "builder" "$ROOT/build_placeholder.sh"
 artifact_status "template DEX" "$ROOT/template/dex/classes.dex"
 if [ -f "$ROOT/template/template-version" ] &&
-        [ "$(tr -d '\r\n' < "$ROOT/template/template-version")" = "5" ]; then
-    append "OK       replacement template: version 5"
+        [ "$(tr -d '\r\n' < "$ROOT/template/template-version")" = "6" ]; then
+    append "OK       replacement template: version 6"
 else
-    mark_missing "replacement template version 5 (run repair)"
+    mark_missing "replacement template version 6 (run repair)"
 fi
 if [ -s "$ROOT/template/icon-generator/com/focsd/appid/icon/IconGenerator.class" ] &&
         [ -f "$ROOT/template/icon-generator-version" ] &&

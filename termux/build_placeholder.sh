@@ -148,16 +148,19 @@ write_template_source() {
 package app.placeholder;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -174,6 +177,7 @@ public final class TemplateActivity extends Activity {
     private String colorHex = "F2F2F2";
     private int foregroundColor;
     private int secondaryColor;
+    private int surfaceColor;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -219,6 +223,7 @@ public final class TemplateActivity extends Activity {
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         int background = night ? Color.rgb(28, 30, 34) : Color.rgb(250, 250, 252);
         int headerBackground = night ? Color.rgb(36, 39, 45) : Color.rgb(242, 243, 247);
+        surfaceColor = night ? Color.rgb(43, 46, 53) : Color.rgb(255, 255, 255);
         foregroundColor = night ? Color.rgb(242, 242, 246) : Color.rgb(45, 45, 50);
         secondaryColor = night ? Color.rgb(190, 194, 204) : Color.rgb(92, 96, 105);
 
@@ -299,11 +304,7 @@ public final class TemplateActivity extends Activity {
                 popup.setOnMenuItemClickListener(item -> {
                     String label = String.valueOf(item.getTitle());
                     if ("About".equals(label)) {
-                        new AlertDialog.Builder(TemplateActivity.this)
-                                .setTitle(placeholderTitle)
-                                .setMessage("You chose to replace this app with:\n\n" + replacementAction + "\n\nCreated with AppId.")
-                                .setPositiveButton("OK", null)
-                                .show();
+                        showAboutDialog();
                         return true;
                     }
                     if ("Close".equals(label)) {
@@ -325,6 +326,66 @@ public final class TemplateActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 21) {
             getWindow().setStatusBarColor(darken(background, 0.90f));
             getWindow().setNavigationBarColor(darken(background, 0.90f));
+        }
+    }
+
+    private void showAboutDialog() {
+        // A custom dialog avoids inheriting the platform's legacy light dialog
+        // styling from this resource-free Activity. Every visible color comes
+        // from the same system-night-mode palette as the placeholder screen.
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(24), dp(22), dp(24), dp(10));
+        GradientDrawable panelBackground = new GradientDrawable();
+        panelBackground.setColor(surfaceColor);
+        panelBackground.setCornerRadius(dp(18));
+        panel.setBackground(panelBackground);
+
+        TextView title = messageText(placeholderTitle, 21f);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setGravity(Gravity.START);
+        panel.addView(title, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView message = messageText(
+                "You chose to replace this app with:\n\n" + replacementAction
+                        + "\n\nCreated with AppId.", 16f);
+        message.setTextColor(secondaryColor);
+        message.setGravity(Gravity.START);
+        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        messageParams.setMargins(0, dp(16), 0, dp(12));
+        panel.addView(message, messageParams);
+
+        TextView ok = messageText("OK", 15f);
+        ok.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        ok.setGravity(Gravity.CENTER);
+        ok.setClickable(true);
+        ok.setFocusable(true);
+        ok.setPadding(dp(20), dp(12), dp(20), dp(12));
+        ok.setOnClickListener(view -> dialog.dismiss());
+        LinearLayout.LayoutParams okParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        okParams.gravity = Gravity.END;
+        panel.addView(ok, okParams);
+
+        dialog.setContentView(panel);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.getDecorView().setPadding(dp(24), 0, dp(24), 0);
+        }
+        dialog.show();
+        if (window != null) {
+            window.setLayout(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
         }
     }
 
@@ -532,7 +593,7 @@ prepare_template() {
     local source="$TEMPLATE_DIR/src/app/placeholder/TemplateActivity.java"
     local dex="$TEMPLATE_DIR/dex/classes.dex"
     local version_file="$TEMPLATE_DIR/template-version"
-    local template_version="5"
+    local template_version="6"
 
     if [ -s "$dex" ] && [ -f "$source" ] && [ -f "$version_file" ] &&
             [ "$(tr -d '\r\n' < "$version_file")" = "$template_version" ]; then
