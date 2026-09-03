@@ -72,7 +72,7 @@ template/dex/classes.dex
 template/icon-generator/com/focsd/appid/icon/IconGenerator.class
 ```
 
-Environment schema `5` requires the Termux packages `openjdk-21`, `aapt`, `d8`, `apksigner`, and `zip`, replacement template version `3`, launcher-icon renderer version `2`, and SHA-256 verification support for the pinned Android platform archive. Setup skips package downloads when the required commands and Android platform JAR already exist, but it always refreshes the embedded builder and repairs generated artifacts. The renderer writes its built-in pixel glyphs directly into a PNG buffer, so no system font, Fontconfig setup, or image-processing package is needed.
+Environment schema `5` requires the Termux packages `openjdk-21`, `aapt`, `d8`, `apksigner`, and `zip`, replacement template version `5`, launcher-icon renderer version `2`, and SHA-256 verification support for the pinned Android platform archive. Setup skips package downloads when the required commands and Android platform JAR already exist, but it always refreshes the embedded builder and repairs generated artifacts. The renderer writes its built-in pixel glyphs directly into a PNG buffer, so no system font, Fontconfig setup, or image-processing package is needed.
 
 ## Audit behavior
 

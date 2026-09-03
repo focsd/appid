@@ -178,6 +178,11 @@ public final class TemplateActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // The manifest intentionally avoids framework style resources because
+        // the tiny Termux build links only against android.jar. Hide the
+        // platform's default action bar in code so the adaptive header below
+        // is the single, consistent top bar on every Android version.
+        if (getActionBar() != null) getActionBar().hide();
         loadMetadata();
         render();
     }
@@ -527,7 +532,7 @@ prepare_template() {
     local source="$TEMPLATE_DIR/src/app/placeholder/TemplateActivity.java"
     local dex="$TEMPLATE_DIR/dex/classes.dex"
     local version_file="$TEMPLATE_DIR/template-version"
-    local template_version="4"
+    local template_version="5"
 
     if [ -s "$dex" ] && [ -f "$source" ] && [ -f "$version_file" ] &&
             [ "$(tr -d '\r\n' < "$version_file")" = "$template_version" ]; then
