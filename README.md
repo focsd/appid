@@ -214,6 +214,10 @@ such as boredom, stress, habit, notifications, and work/study moments. Choosing
 trigger are shown on the generated placeholder so the replacement remains a
 visible reminder.
 
+The creator form scrolls as one screen. On smaller phones it keeps the focused
+reason, trigger, or replacement-action field above the software keyboard, and
+automatically brings a newly revealed **Other…** field into view.
+
 The example reason and action are input hints rather than entered text. They disappear while typing and reappear whenever the field is empty.
 Installed AppId placeholders also appear in the dropdown with a `★` prefix, so they
 can be rebuilt with a new reason or replacement action.

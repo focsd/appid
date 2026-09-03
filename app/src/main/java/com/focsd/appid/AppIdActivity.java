@@ -21,6 +21,7 @@ import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -117,6 +118,7 @@ abstract class AppIdActivity extends Activity {
     private TextView creatorProgressText;
     private TextView creatorSetupStatus;
     private TextView platformSourceText;
+    private ScrollView creatorScroll;
     private View creatorView;
     private View setupView;
     private boolean showingSetup;
@@ -185,6 +187,10 @@ abstract class AppIdActivity extends Activity {
     }
 
     private View buildCreatorView() {
+        creatorScroll = new ScrollView(this);
+        creatorScroll.setFillViewport(true);
+        creatorScroll.setBackgroundColor(ThemePalette.background(this));
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(20), dp(18), dp(20), dp(20));
@@ -265,6 +271,7 @@ abstract class AppIdActivity extends Activity {
         reasonChoice.setOnItemSelectedListener(new SimpleItemSelectedListener() {
             @Override public void onItemSelected(int position) {
                 reasonInput.setVisibility(position == 10 ? View.VISIBLE : View.GONE);
+                if (position == 10) revealEditor(reasonInput, true);
             }
         });
 
@@ -282,6 +289,7 @@ abstract class AppIdActivity extends Activity {
         triggerChoice.setOnItemSelectedListener(new SimpleItemSelectedListener() {
             @Override public void onItemSelected(int position) {
                 triggerInput.setVisibility(position == 9 ? View.VISIBLE : View.GONE);
+                if (position == 9) revealEditor(triggerInput, true);
             }
         });
 
@@ -331,7 +339,10 @@ abstract class AppIdActivity extends Activity {
         root.addView(navigationHint);
 
         SystemBarInsets.applyTo(root);
-        return root;
+        creatorScroll.addView(root, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        return creatorScroll;
     }
 
     private View buildSetupView() {
@@ -1399,7 +1410,25 @@ abstract class AppIdActivity extends Activity {
         );
         lp.setMargins(0, dp(4), 0, dp(6));
         e.setLayoutParams(lp);
+        e.setOnFocusChangeListener((view, focused) -> {
+            if (focused) revealEditor(e, false);
+        });
         return e;
+    }
+
+    private void revealEditor(EditText editor, boolean requestFocus) {
+        if (creatorScroll == null || editor.getVisibility() != View.VISIBLE) return;
+        Runnable reveal = () -> {
+            if (requestFocus) editor.requestFocus();
+            Rect bounds = new Rect();
+            editor.getDrawingRect(bounds);
+            editor.requestRectangleOnScreen(bounds, true);
+        };
+        // Run once after the field becomes visible and again after the input
+        // method has resized the activity. The second pass is what keeps the
+        // lower "urge" field above keyboards on compact screens.
+        editor.post(reveal);
+        editor.postDelayed(reveal, 250L);
     }
 
     @SuppressWarnings("deprecation")
