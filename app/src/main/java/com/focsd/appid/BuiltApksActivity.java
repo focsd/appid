@@ -120,8 +120,11 @@ public final class BuiltApksActivity extends Activity {
         List<String> actions = new ArrayList<>();
         if (record.hasApk()) actions.add(record.realAppInstalled()
                 ? "Install placeholder (real app must be uninstalled first)" : "Install APK");
-        if (record.installed) actions.add(record.installedPlaceholder
-                ? "Uninstall placeholder…" : "Uninstall real app…");
+        if (record.installed) {
+            actions.add("Open installed " + (record.installedPlaceholder ? "placeholder" : "app"));
+            actions.add(record.installedPlaceholder
+                    ? "Uninstall placeholder…" : "Uninstall real app…");
+        }
         actions.add("Copy App ID");
         if (record.hasApk()) actions.add("Delete saved installer APK");
         new AlertDialog.Builder(this)
@@ -130,12 +133,26 @@ public final class BuiltApksActivity extends Activity {
                         (dialog, which) -> {
                             String action = actions.get(which);
                             if (action.startsWith("Install")) install(record);
+                            else if (action.startsWith("Open installed")) openInstalled(record.packageName);
                             else if (action.startsWith("Uninstall")) confirmUninstall(record);
                             else if (action.startsWith("Copy")) copyPackage(record.packageName);
                             else confirmDelete(record);
                         })
                 .setNegativeButton("Close", null)
                 .show();
+    }
+
+    private void openInstalled(String packageName) {
+        Intent launch = getPackageManager().getLaunchIntentForPackage(packageName);
+        if (launch == null) {
+            toast("No launchable activity was found for " + packageName);
+            return;
+        }
+        try {
+            startActivity(launch);
+        } catch (Exception error) {
+            toast("Could not open " + packageName + ": " + error.getMessage());
+        }
     }
 
     private void install(BuiltApkStore.Record record) {
@@ -211,14 +228,32 @@ public final class BuiltApksActivity extends Activity {
                 .setMessage(record.title + "\n" + record.packageName + "\n\n" + warning)
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Open uninstaller", (dialog, which) -> {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_DELETE,
-                                Uri.parse("package:" + record.packageName)));
-                    } catch (Exception error) {
-                        toast("Android could not open the uninstaller");
-                    }
+                    openUninstaller(record.packageName);
                 })
                 .show();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void openUninstaller(String packageName) {
+        Uri packageUri = Uri.parse("package:" + packageName);
+        Intent uninstall = new Intent(Intent.ACTION_UNINSTALL_PACKAGE, packageUri);
+        uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
+        try {
+            startActivity(uninstall);
+            return;
+        } catch (Exception ignored) {
+            // A few vendor package managers do not register ACTION_UNINSTALL_PACKAGE.
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_DELETE, packageUri));
+        } catch (Exception ignored) {
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
+                toast("Open App info and choose Uninstall");
+            } catch (Exception error) {
+                toast("Android could not open the uninstaller for " + packageName);
+            }
+        }
     }
 
     private void copyPackage(String packageName) {

@@ -105,11 +105,15 @@ Then fully close/reopen Termux.
 
 AppId sends setup and APK builds as Termux background commands. **Display over other apps is not required** because AppId does not start interactive Termux terminal sessions.
 
+If Android has force-stopped Termux or blocks its background service, AppId now explains the reason and offers **Open Termux**. Open Termux once, leave it visible briefly, then return to AppId and retry the operation. Android does not allow AppId to silently override a force-stop or device-specific background-start restriction.
+
 ### 3. Grant RUN_COMMAND permission
 
 Android Settings -> Apps -> AppId -> Permissions / Additional permissions -> allow **Run commands in Termux environment**.
 
 The exact label/location varies by Android vendor.
+
+AppId also requests Android's `REQUEST_DELETE_PACKAGES` capability so the system package installer can display the normal uninstall confirmation. AppId never removes an app silently.
 
 ### 4. Tap `Install / repair full environment`
 
@@ -124,6 +128,18 @@ zip
 ```
 
 The **Install / repair environment** action in **Setup & tools** is idempotent: it embeds the current builder and checker, installs missing Termux packages, downloads Android SDK Platform 35 with a pinned SHA-256 verification, prepares the reusable template and icon renderer, creates signing material, records environment schema version `5`, and automatically runs the dependency audit. If RUN_COMMAND is not usable yet, **Copy manual environment bootstrap** copies the same complete setup as a pasteable Termux command.
+
+The **↗ Download documented platform source** action opens the pinned Google
+platform archive in a separate browser/download window. After it finishes, return
+to AppId and choose **Import platform ZIP or android.jar**. The manual bootstrap
+button is an advanced fallback that copies the complete command for users who
+prefer to paste it into Termux; normal setup does not require it.
+
+Imports are checked immediately: AppId accepts a raw `android.jar` or a platform
+ZIP containing `android-35/android.jar` and rejects unrelated or corrupt files
+before passing anything to Termux. During setup, only Termux can read the
+user-selected copy in `Download/com.focsd.appid/` for Termux; it is not downloaded
+by AppId itself and is not generally exposed beyond that user-visible file.
 
 For reproducible package installation, setup backs up the existing main `sources.list` as `sources.list.com.focsd.appid-backup`, selects Termux's primary package repository, and uses bounded download retries. If the primary repository fails, setup automatically retries against the official-listed Warsaw mirror.
 
@@ -145,6 +161,10 @@ Otherwise they remain under:
 ```text
 ~/.com.focsd.appid/output/
 ```
+
+If shared Downloads access is unavailable, open **Setup & tools → Grant Termux
+storage access**, grant Termux's storage permission in Android Settings, and rerun
+setup. Builds still work without it and remain in Termux's private output folder.
 
 ### 5. Allow AppId to install unknown apps
 
@@ -187,6 +207,13 @@ Why:     I want to finish writing my book.
 Instead: Read 2 pages
 ```
 
+The creator offers a guided reason menu (including focus, sleep, distraction, and
+mindless-use choices) plus a second **What usually triggers it?** menu with options
+such as boredom, stress, habit, notifications, and work/study moments. Choosing
+**Other…** in either menu reveals a custom text field. The selected reason and
+trigger are shown on the generated placeholder so the replacement remains a
+visible reminder.
+
 The example reason and action are input hints rather than entered text. They disappear while typing and reappear whenever the field is empty.
 Installed AppId placeholders also appear in the dropdown with a `★` prefix, so they
 can be rebuilt with a new reason or replacement action.
@@ -195,7 +222,15 @@ Tap:
 
 - **CREATE** — creates and signs the replacement APK and adds it to the APK library.
 
+Enable **Reuse original icon color** before creating a placeholder to sample the
+selected app's launcher icon color for the generated replacement. Leave it off to
+use AppId's neutral default color. This color is used for the launcher artwork;
+the placeholder screen itself follows Android's current light/dark system mode
+with independent high-contrast text and background colors.
+
 Every successful build is also transferred into AppId's private **Built APK library**. Rebuilding an existing package ID replaces its previous library APK with the newest build. The library distinguishes an installed AppId placeholder from a real app using the same package ID and offers Android-confirmed install and uninstall actions. After a placeholder is successfully installed and you return to AppId, it deletes its private installer APK and cache copy but keeps the installed placeholder visible. Uninstalling that placeholder removes the entry when no saved installer remains.
+
+For an installed entry, its actions menu also includes **Open installed placeholder** so you can launch it directly for testing.
 
 APK builds remain locked until the latest dependency audit reports `READY`, preventing a missing or incomplete Termux environment from being invoked as though the builder were installed.
 

@@ -8,6 +8,7 @@ ENVIRONMENT_VERSION="5"
 PROGRESS_TOKEN="${1:-}"
 BUILDER_B64="${2:-}"
 CHECKER_B64="${3:-}"
+PLATFORM_SOURCE_URI="${4:-}"
 ANDROID_PLATFORM_URL="https://dl.google.com/android/repository/platform-35_r02.zip"
 ANDROID_PLATFORM_SHA256="0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0"
 
@@ -86,13 +87,62 @@ ensure_android_platform() {
     local android_jar="$ROOT/android.jar"
     local archive="$ROOT/platform-35_r02.zip"
     local downloader="$ROOT/DownloadAndroidPlatform.java"
-    if [ -s "$android_jar" ]; then
+    if [ -s "$android_jar" ] && [ -z "$PLATFORM_SOURCE_URI" ]; then
         printf 'Android SDK platform JAR is already installed.\n'
         return 0
     fi
 
+    if [ -n "$PLATFORM_SOURCE_URI" ]; then
+        local imported="$ROOT/platform-source.imported"
+        local imported_jar="$ROOT/android.jar.imported"
+        progress "Setup 2/4" "Importing the selected Android platform file…"
+        printf 'Reading the selected platform file from AppId…\n'
+        rm -f "$imported" "$imported_jar"
+        if [[ "$PLATFORM_SOURCE_URI" == content://* ]]; then
+            if ! PATH="/system/bin:$PATH" /system/bin/content read --uri "$PLATFORM_SOURCE_URI" --user "$(($(id -u) / 100000))" > "$imported"; then
+                printf 'Could not read the selected platform file through the AppId URI grant (%s). Choose it again or clear the selection.\n' "$PLATFORM_SOURCE_URI" >&2
+                return 1
+            fi
+        else
+            local relative_source="${PLATFORM_SOURCE_URI#/}"
+            local shared_source="$HOME/storage/shared/$relative_source"
+            if [ ! -s "$shared_source" ] && [ -s "/sdcard/$relative_source" ]; then
+                shared_source="/sdcard/$relative_source"
+            fi
+            if [ ! -s "$shared_source" ]; then
+                printf 'Selected platform file is not available in Termux shared Downloads: %s\n' "$shared_source" >&2
+                printf 'Termux storage access is unavailable; falling back to the pinned documented Google source.\n' >&2
+                progress_log "Imported source unavailable; fallback URL: $ANDROID_PLATFORM_URL"
+                PLATFORM_SOURCE_URI=""
+            else
+                cp "$shared_source" "$imported"
+            fi
+        fi
+        if [ -z "$PLATFORM_SOURCE_URI" ]; then
+            rm -f "$imported"
+            ensure_android_platform
+            return $?
+        fi
+        if unzip -t "$imported" >/dev/null 2>&1 &&
+                unzip -p "$imported" android-35/android.jar > "$imported_jar" 2>/dev/null &&
+                [ -s "$imported_jar" ]; then
+            mv "$imported_jar" "$android_jar"
+        elif unzip -t "$imported" >/dev/null 2>&1 &&
+                unzip -l "$imported" | grep -q 'android/app/Activity.class'; then
+            cp "$imported" "$android_jar"
+        else
+            printf 'Selected file is not a valid Android platform ZIP or android.jar.\n' >&2
+            rm -f "$imported" "$imported_jar"
+            return 1
+        fi
+        rm -f "$imported" "$imported_jar"
+        printf 'Android platform JAR imported: %s\n' "$android_jar"
+        return 0
+    fi
+
     progress "Setup 2/4" "Downloading Android SDK Platform 35 (about 64 MB)…"
-    printf 'Downloading Android SDK Platform 35 from Google...\n'
+    printf 'Downloading Android SDK Platform 35 from Google: %s\n' "$ANDROID_PLATFORM_URL"
+    progress_log "Downloading pinned platform URL: $ANDROID_PLATFORM_URL"
     cat > "$downloader" <<'JAVA'
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -169,7 +219,7 @@ fi
 mv "$ROOT/build_placeholder.sh.tmp" "$ROOT/build_placeholder.sh"
 mv "$ROOT/check_environment.sh.tmp" "$ROOT/check_environment.sh"
 chmod 700 "$ROOT/build_placeholder.sh" "$ROOT/check_environment.sh"
-printf 'Builder and dependency checker installed.\n'
+    printf 'Builder and dependency checker installed.\n'
 
 toolchain_ready() {
     local command
@@ -197,13 +247,13 @@ else
     fi
 fi
 
-ensure_android_platform
-
 progress "Setup 3/4" "Checking shared storage access…"
 if [ ! -e "$HOME/storage/shared" ]; then
     printf '\nRequesting Termux shared-storage access. Android may show a permission dialog...\n'
     termux-setup-storage || true
 fi
+
+ensure_android_platform
 
 printf '\nPreparing the reusable placeholder template...\n'
 progress "Setup 4/4" "Preparing the reusable app template…"

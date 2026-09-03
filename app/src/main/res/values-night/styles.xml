@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppIdTheme" parent="android:style/Theme.Material.Light.DarkActionBar">
+        <item name="android:windowBackground">#1C1E22</item>
+        <item name="android:colorAccent">#9DB7FF</item>
+        <item name="android:navigationBarColor">#1C1E22</item>
+        <item name="android:statusBarColor">#17191D</item>
+    </style>
+</resources>

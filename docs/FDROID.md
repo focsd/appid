@@ -15,7 +15,12 @@ Internet permission. The project is MIT-licensed. Store copy and changelogs live
 - `PACKAGE_USAGE_STATS` is a special setting granted explicitly by the user and is
   used only for local screen-time and storage display.
 - AppId itself has no Internet permission. Its user-started Termux setup downloads
-  free-software packages and a SHA-256-pinned Android platform archive.
+  free-software packages and, when no user-provided platform source is configured,
+  a SHA-256-pinned Android platform archive. Setup & tools can import a compatible
+  `android.jar` or platform ZIP instead; AppId validates it, keeps a private copy,
+  and places a user-selected copy in `Download/com.focsd.appid/` for Termux setup.
+- The optional **Download documented platform source** action delegates the pinned
+  URL to the user's browser/download manager; AppId performs no network request.
 - The generated APK is executable content, but it is created only after an explicit
   user build request and is never downloaded or installed silently.
 
@@ -23,14 +28,14 @@ See `PRIVACY.md` for the user-facing data-handling statement.
 
 ## Validation status
 
-On 2026-08-11, the release candidate was validated in Docker with fdroidserver
+On 2026-08-11, AppId 0.11.1 (29) was validated in Docker with fdroidserver
 2.4.2 (upstream commit `6af4c421`), OpenJDK 21, Gradle 8.11.1, Android platform
 35, and build-tools 35.0.0. `fdroid readmeta`, `fdroid rewritemeta`, and
 `fdroid lint` completed without findings. The F-Droid source scanner completed
 without findings, the APK-level scanner exited cleanly, and
-`fdroid build --test com.focsd.appid:28` produced and accepted the unsigned APK.
+`fdroid build --test com.focsd.appid:29` produced and accepted the unsigned APK.
 The validation APK's SHA-256 was
-`ba8757a18a02d18d40724c2df69e59ea04b6c678141afbb44371a665a1a9ff1b`.
+`b347fd01eb230e7aeb41d4386e383a99f573caf40298c5d008599023c6cb5d0c`.
 Release VCS metadata is disabled so documentation-only commits do not change the
 APK bytes.
 
@@ -124,9 +129,9 @@ Repo: https://github.com/focsd/appid.git
 Binaries: https://github.com/focsd/appid/releases/download/v%v/AppId-v%v.apk
 
 Builds:
-  - versionName: 0.11.0
-    versionCode: 28
-    commit: 6f2777bc3ba68a057ce5c0338e12eade0091ec7c
+  - versionName: 0.11.1
+    versionCode: 29
+    commit: 416160d630f1eefe2b153e64ce060b8402ff79b5
     subdir: app
     gradle:
       - yes
@@ -135,8 +140,8 @@ AllowedAPKSigningKeys: be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.11.0
-CurrentVersionCode: 28
+CurrentVersion: 0.11.1
+CurrentVersionCode: 29
 ```
 
 Run `fdroid readmeta`, `fdroid rewritemeta com.focsd.appid`,

@@ -22,7 +22,7 @@ package_status() {
     local result
     result="$(dpkg-query -W -f='${db:Status-Abbrev} ${Version}' "$package" 2>/dev/null || true)"
     if [[ "$result" == ii* ]]; then
-        append "OK       package $package: ${result#ii }"
+        append "OK       $package: ${result#ii }"
     else
         mark_missing "package $package"
     fi
@@ -43,7 +43,7 @@ command_status() {
         zip) version="$(zip -v 2>&1 | head -n 2 | tail -n 1)" ;;
         *) version="$(command -v "$command")" ;;
     esac
-    append "OK       command $command: $version"
+    append "OK       $command: $version"
 }
 
 artifact_status() {
@@ -96,13 +96,18 @@ elif [ -s "$PREFIX/share/aapt/android.jar" ]; then
 else
     mark_missing "Android platform JAR"
 fi
+# The template-version marker is deliberately checked independently from the
+# DEX file. A successful Java/D8 compilation can still leave an older template
+# on disk when the source changes. Keeping this explicit marker lets setup
+# invalidate and rebuild the reusable Activity, while the report gives AppId a
+# stable, human-readable contract for deciding whether CREATE is safe.
 artifact_status "builder" "$ROOT/build_placeholder.sh"
 artifact_status "template DEX" "$ROOT/template/dex/classes.dex"
 if [ -f "$ROOT/template/template-version" ] &&
-        [ "$(tr -d '\r\n' < "$ROOT/template/template-version")" = "2" ]; then
-    append "OK       replacement template: version 2"
+        [ "$(tr -d '\r\n' < "$ROOT/template/template-version")" = "4" ]; then
+    append "OK       replacement template: version 4"
 else
-    mark_missing "replacement template version 2 (run repair)"
+    mark_missing "replacement template version 4 (run repair)"
 fi
 if [ -s "$ROOT/template/icon-generator/com/focsd/appid/icon/IconGenerator.class" ] &&
         [ -f "$ROOT/template/icon-generator-version" ] &&

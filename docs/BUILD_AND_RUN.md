@@ -5,7 +5,10 @@ This document records the path from the current source tree to a running debug A
 ## Development quality gates
 
 The project pins AGP 8.9.2 to its supported Gradle 8.11.1 wrapper and verifies the
-wrapper distribution checksum. Run the same local checks as CI with:
+wrapper distribution checksum. Gradle's daemon JVM is pinned to Java 17 in
+`gradle/gradle-daemon-jvm.properties`; Android Studio should use the project
+Gradle JDK (`#GRADLE_LOCAL_JAVA_HOME`) rather than a Java 25 runtime. Run the same
+local checks as CI with:
 
 ```sh
 export JAVA_HOME="$HOME/Applications/Android Studio.app/Contents/jbr/Contents/Home"
@@ -167,6 +170,34 @@ ADB="$HOME/Library/Android/sdk/platform-tools/adb"
 ```
 
 Use `-s SERIAL` after `adb` in both commands when more than one device is connected.
+
+## Test the device UI
+
+Run the safe UI smoke test after installing the debug APK:
+
+```sh
+ANDROID_SERIAL=YOUR_DEVICE_SERIAL ./scripts/test_device_buttons.sh
+```
+
+It finds controls by their visible labels through UIAutomator, checks the main
+screen, exercises the overflow destinations and setup buttons, and leaves build,
+uninstall, and deletion actions alone. Add `--include-build` only when you want
+the test to invoke the Termux builder.
+
+## Android platform source for AppId
+
+The Android SDK installed by Android Studio normally keeps the latest platform JAR
+at:
+
+```text
+$HOME/Library/Android/sdk/platforms/android-35/android.jar
+```
+
+The equivalent SDK path can be found with `~/Library/Android/sdk` or Android
+Studio's **Settings/Preferences → Android SDK → Android SDK Location**. In AppId,
+open **Setup & tools → Import platform ZIP or android.jar**, select that file (or a
+platform ZIP containing `android-35/android.jar`), then run setup. The imported
+file is stored privately by AppId and is not bundled into the APK.
 
 ## Verified result
 

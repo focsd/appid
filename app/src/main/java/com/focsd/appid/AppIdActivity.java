@@ -9,6 +9,8 @@ import android.content.ClipboardManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.ContentValues;
+import android.database.Cursor;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -16,12 +18,17 @@ import android.content.res.ColorStateList;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.provider.OpenableColumns;
+import android.provider.MediaStore;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Base64;
@@ -31,15 +38,19 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +59,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 abstract class AppIdActivity extends Activity {
 
@@ -57,6 +70,10 @@ abstract class AppIdActivity extends Activity {
     private static final String TERMUX_PERMISSION_RUN_COMMAND = "com.termux.permission.RUN_COMMAND";
     private static final String TERMUX_INSTALL_GUIDE =
             "https://github.com/termux/termux-app#installation";
+    private static final String TERMUX_FDROID_PAGE =
+            "https://f-droid.org/packages/com.termux/";
+    private static final String ANDROID_PLATFORM_SOURCE_URL =
+            "https://dl.google.com/android/repository/platform-35_r02.zip";
     private static final String ACTION_BUILD_PROGRESS =
             "com.focsd.appid.BUILD_PROGRESS";
     // These belong to the external Termux package, so Context file APIs cannot resolve them.
@@ -75,6 +92,10 @@ abstract class AppIdActivity extends Activity {
     private static final int MENU_APK_LIBRARY = 2;
     private static final int MENU_INSTALLED_APPS = 3;
     private static final int MENU_ABOUT = 4;
+    private static final int REQUEST_PLATFORM_SOURCE = 4201;
+    private static final String PREFS = "appid.preferences";
+    private static final String PREF_PLATFORM_SOURCE_NAME = "platform_source_name";
+    private static final String PREF_PLATFORM_SOURCE_EXTERNAL = "platform_source_external";
     static final String EXTRA_TARGET_PACKAGE = "com.focsd.appid.extra.TARGET_PACKAGE";
     static final String EXTRA_TARGET_TITLE = "com.focsd.appid.extra.TARGET_TITLE";
     private static final String STATE_SETUP_VIEW = "setup_view";
@@ -83,14 +104,21 @@ abstract class AppIdActivity extends Activity {
     private static final String STATE_ACTION = "action";
 
     private Spinner appInput;
+    private ImageView appIconPreview;
+    private TextView creatorHeading;
+    private Spinner reasonChoice;
+    private Spinner triggerChoice;
     private EditText reasonInput;
+    private EditText triggerInput;
     private EditText actionInput;
+    private CheckBox reuseIconColorInput;
     private TextView statusText;
     private TextView progressText;
     private TextView environmentText;
     private ScrollableConsoleTextView consoleText;
     private TextView creatorProgressText;
     private TextView creatorSetupStatus;
+    private TextView platformSourceText;
     private View creatorView;
     private View setupView;
     private boolean showingSetup;
@@ -164,11 +192,22 @@ abstract class AppIdActivity extends Activity {
         root.setPadding(dp(20), dp(18), dp(20), dp(20));
         root.setBackgroundColor(Color.rgb(250, 250, 252));
 
-        TextView heading = text("Replace an app with a better choice");
-        heading.setTextSize(25f);
-        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        heading.setTextColor(Color.rgb(28, 31, 38));
-        root.addView(heading);
+        LinearLayout headingRow = new LinearLayout(this);
+        headingRow.setOrientation(LinearLayout.HORIZONTAL);
+        headingRow.setGravity(Gravity.CENTER_VERTICAL);
+        creatorHeading = text("Replace an app with a better choice");
+        creatorHeading.setTextSize(25f);
+        creatorHeading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        creatorHeading.setTextColor(Color.rgb(28, 31, 38));
+        headingRow.addView(creatorHeading, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        appIconPreview = new ImageView(this);
+        appIconPreview.setContentDescription("Selected app icon");
+        appIconPreview.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        appIconPreview.setPadding(dp(4), dp(4), dp(4), dp(4));
+        headingRow.addView(appIconPreview, new LinearLayout.LayoutParams(dp(64), dp(64)));
+        root.addView(headingRow);
 
         TextView intro = text("Choose the app, name your reason, and decide what to do instead.");
         intro.setTextSize(14f);
@@ -195,18 +234,58 @@ abstract class AppIdActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         loadReplaceableApps(null);
+        appInput.setOnItemSelectedListener(new SimpleItemSelectedListener() {
+            @Override public void onItemSelected(int position) { updateSelectedAppIcon(); }
+        });
 
-        TextView reasonPrompt = fieldLabel("Why are you removing it?");
+        TextView reasonPrompt = fieldLabel("Why are you removing this app?");
         reasonPrompt.setPadding(0, dp(12), 0, 0);
         form.addView(reasonPrompt);
-        reasonInput = editText("Reason", "I want to finish writing my book.");
+        reasonChoice = choiceSpinner(new String[]{
+                "I open it without thinking.",
+                "I spend more time here than I intend to.",
+                "It distracts me from work or study.",
+                "I keep checking it when I should be doing something else.",
+                "I want to stop endless scrolling.",
+                "It interferes with my sleep.",
+                "It makes it harder for me to focus.",
+                "I usually feel worse after using it.",
+                "I want more time for things that matter to me.",
+                "I am taking a break from this app.",
+                "Other…"
+        });
+        form.addView(reasonChoice);
+        reasonInput = editText("Tell us your reason", "");
         reasonInput.setInputType(InputType.TYPE_CLASS_TEXT |
                 InputType.TYPE_TEXT_FLAG_CAP_SENTENCES |
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         reasonInput.setSingleLine(false);
         reasonInput.setMinLines(2);
         reasonInput.setMaxLines(3);
+        reasonInput.setVisibility(View.GONE);
         form.addView(reasonInput);
+        reasonChoice.setOnItemSelectedListener(new SimpleItemSelectedListener() {
+            @Override public void onItemSelected(int position) {
+                reasonInput.setVisibility(position == 10 ? View.VISIBLE : View.GONE);
+            }
+        });
+
+        TextView triggerPrompt = fieldLabel("What usually triggers it?");
+        triggerPrompt.setPadding(0, dp(8), 0, 0);
+        form.addView(triggerPrompt);
+        triggerChoice = choiceSpinner(new String[]{
+                "Boredom", "Stress", "Procrastination", "Habit", "Notifications",
+                "Before sleep", "When waking up", "During work/study", "Waiting / idle moments", "Other…"
+        });
+        form.addView(triggerChoice);
+        triggerInput = editText("Tell us what usually triggers it", "");
+        triggerInput.setVisibility(View.GONE);
+        form.addView(triggerInput);
+        triggerChoice.setOnItemSelectedListener(new SimpleItemSelectedListener() {
+            @Override public void onItemSelected(int position) {
+                triggerInput.setVisibility(position == 9 ? View.VISIBLE : View.GONE);
+            }
+        });
 
         TextView actionPrompt = fieldLabel("Instead, when I get the urge:");
         actionPrompt.setPadding(0, dp(8), 0, 0);
@@ -215,6 +294,12 @@ abstract class AppIdActivity extends Activity {
         actionInput.setInputType(InputType.TYPE_CLASS_TEXT |
                 InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         form.addView(actionInput);
+
+        reuseIconColorInput = new CheckBox(this);
+        reuseIconColorInput.setText("Reuse original icon color");
+        reuseIconColorInput.setContentDescription("Reuse original icon color");
+        reuseIconColorInput.setPadding(0, dp(4), 0, 0);
+        form.addView(reuseIconColorInput);
 
         Button create = button("CREATE", v -> buildPlaceholder());
         create.setAllCaps(true);
@@ -289,16 +374,18 @@ abstract class AppIdActivity extends Activity {
         statusText.setBackground(roundedBackground(Color.rgb(244, 245, 248), 10));
         root.addView(statusText);
 
-        Button copyInit = button("1. Copy first-run Termux command", v -> copyInitCommand());
+        Button copyInit = requiredButton("1. Copy first-run Termux command", v -> copyInitCommand());
         root.addView(copyInit);
-        Button openTermux = button("2. Open Termux", v -> openTermux());
+        Button openTermux = requiredButton("2. Open Termux", v -> openTermux());
         root.addView(openTermux);
-        Button permission = button("3. Grant AppId Termux permission", v -> requestOrOpenRunCommandPermission());
+        Button permission = requiredButton("3. Grant AppId Termux permission", v -> requestOrOpenRunCommandPermission());
         if (isPackageInstalled(TERMUX_PACKAGE) && !hasRunCommandSupport()) {
             permission.setText("3. Check Termux compatibility");
         }
         root.addView(permission);
-        Button setup = button("4. Install / repair environment", v -> setupBuilder());
+        Button storagePermission = button("Grant Termux storage access", v -> openTermuxStorageSettings());
+        root.addView(storagePermission);
+        Button setup = requiredButton("4. Install / repair environment", v -> setupBuilder());
         root.addView(setup);
         Button check = button("Check dependencies now", v -> checkEnvironment());
         root.addView(check);
@@ -396,10 +483,34 @@ abstract class AppIdActivity extends Activity {
 
         root.addView(spacer(18));
         root.addView(sectionTitle("Advanced & Android settings"));
+        root.addView(sectionTitle("Android platform source"));
+        platformSourceText = text(platformSourceDescription());
+        platformSourceText.setTextSize(13f);
+        platformSourceText.setTextColor(Color.DKGRAY);
+        platformSourceText.setPadding(dp(4), dp(4), dp(4), dp(8));
+        root.addView(platformSourceText);
+        Button importPlatform = button("Import platform ZIP or android.jar", v -> importPlatformSource());
+        root.addView(importPlatform);
+        Button downloadPlatform = button("↗ Download documented platform source", v -> downloadPlatformSource());
+        root.addView(downloadPlatform);
+        TextView sourceHint = text("↗ opens a separate browser/download window. After it finishes, return here and import the ZIP; AppId never downloads it directly.");
+        sourceHint.setTextSize(12f);
+        sourceHint.setTextColor(Color.DKGRAY);
+        sourceHint.setPadding(dp(4), 0, dp(4), dp(6));
+        root.addView(sourceHint);
+        Button clearPlatform = button("Clear imported platform source", v -> clearPlatformSource());
+        root.addView(clearPlatform);
         Button manualSetup = button("Copy manual environment bootstrap", v -> copyManualEnvironmentSetup());
+        TextView manualHint = text("Advanced fallback: copies the complete bootstrap command to the clipboard for manual pasting into Termux. Most users should use Install / repair environment above.");
+        manualHint.setTextSize(12f);
+        manualHint.setTextColor(Color.DKGRAY);
+        manualHint.setPadding(dp(4), 0, dp(4), dp(4));
+        root.addView(manualHint);
         root.addView(manualSetup);
         Button unknownSources = button("Allow AppId to install APKs", v -> openUnknownSourcesSettings());
         root.addView(unknownSources);
+        Button resetEnvironment = button("Reset AppId environment…", v -> confirmResetEnvironment());
+        root.addView(resetEnvironment);
 
         SystemBarInsets.applyTo(scroll);
         return scroll;
@@ -432,11 +543,12 @@ abstract class AppIdActivity extends Activity {
             String script = readAsset("setup_termux.sh");
             String builderB64 = encodeAsset("build_placeholder.sh");
             String checkerB64 = encodeAsset("check_environment.sh");
+            String platformSourceUri = getPlatformSourceUri();
             String progressToken = startProgress("Environment setup", "setup", null);
             runTermuxCommand(
                     TERMUX_BASH,
                     new String[]{"-c", script, "focsd-appid-setup", progressToken,
-                            builderB64, checkerB64},
+                            builderB64, checkerB64, platformSourceUri},
                     null,
                     true,
                     progressToken
@@ -445,6 +557,160 @@ abstract class AppIdActivity extends Activity {
         } catch (IOException e) {
             showError("Could not read embedded builder scripts: " + e.getMessage());
         }
+    }
+
+    private void openTermuxStorageSettings() {
+        if (!isPackageInstalled(TERMUX_PACKAGE)) {
+            showError("Termux is not installed.");
+            return;
+        }
+        try {
+            Intent settingsIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + TERMUX_PACKAGE));
+            startActivity(settingsIntent);
+        } catch (Exception e) {
+            showError("Could not open Termux app settings: " + e.getMessage());
+        }
+    }
+
+    private String platformSourceDescription() {
+        String name = getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString(PREF_PLATFORM_SOURCE_NAME, "");
+        return name.isEmpty()
+                ? "No imported platform file. Setup will use the documented source by default."
+                : "Imported source: " + name + "\nSetup will use it instead of downloading the platform archive.";
+    }
+
+    private String getPlatformSourceUri() {
+        String name = getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString(PREF_PLATFORM_SOURCE_NAME, "");
+        File source = new File(getFilesDir(), "platform-source");
+        return name.isEmpty() || !source.isFile()
+                ? ""
+                : getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString(PREF_PLATFORM_SOURCE_EXTERNAL, "");
+    }
+
+    @SuppressWarnings("deprecation")
+    private void importPlatformSource() {
+        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        pick.addCategory(Intent.CATEGORY_OPENABLE);
+        pick.setType("application/octet-stream");
+        pick.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/zip", "application/java-archive", "application/octet-stream"});
+        try {
+            startActivityForResult(pick, REQUEST_PLATFORM_SOURCE);
+        } catch (Exception e) {
+            showError("Could not open a file picker: " + e.getMessage());
+        }
+    }
+
+    private void clearPlatformSource() {
+        deleteFile("platform-source");
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .remove(PREF_PLATFORM_SOURCE_NAME)
+                .remove(PREF_PLATFORM_SOURCE_EXTERNAL).apply();
+        if (platformSourceText != null) platformSourceText.setText(platformSourceDescription());
+        toast("The imported source was cleared; setup will use the existing Termux JAR or documented download");
+    }
+
+    private void downloadPlatformSource() {
+        try {
+            Intent download = new Intent(Intent.ACTION_VIEW, Uri.parse(ANDROID_PLATFORM_SOURCE_URL));
+            startActivity(download);
+            toast("Download the platform ZIP, then return and import it");
+        } catch (Exception e) {
+            copyText("Android platform source URL", ANDROID_PLATFORM_SOURCE_URL);
+            showError("No browser or download app is available. The URL was copied instead.");
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_PLATFORM_SOURCE || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        Uri source = data.getData();
+        File target = new File(getFilesDir(), "platform-source");
+        File temporary = new File(getFilesDir(), "platform-source.tmp");
+        try (InputStream input = getContentResolver().openInputStream(source);
+             FileOutputStream output = new FileOutputStream(temporary)) {
+            if (input == null) throw new IOException("the selected file could not be opened");
+            byte[] buffer = new byte[8192];
+            long total = 0;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                total += read;
+                if (total > 120L * 1024L * 1024L) throw new IOException("file is larger than 120 MiB");
+                output.write(buffer, 0, read);
+            }
+            if (total == 0) throw new IOException("the selected file is empty");
+            if (!isCompatiblePlatformSource(temporary)) {
+                throw new IOException("not a compatible Android platform source; select android.jar or a platform ZIP containing android-35/android.jar");
+            }
+            target.delete();
+            if (!temporary.renameTo(target)) throw new IOException("could not store the selected file");
+            String displayName = null;
+            try (Cursor cursor = getContentResolver().query(source,
+                    new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    displayName = cursor.getString(0);
+                }
+            }
+            if (displayName == null || displayName.isEmpty()) displayName = source.getLastPathSegment();
+            String sharedPath = publishPlatformSource(target);
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                    .putString(PREF_PLATFORM_SOURCE_NAME,
+                            displayName == null || displayName.isEmpty() ? "selected file" : displayName)
+                    .putString(PREF_PLATFORM_SOURCE_EXTERNAL, sharedPath)
+                    .apply();
+            if (platformSourceText != null) platformSourceText.setText(platformSourceDescription());
+            toast("Platform source imported; run setup to validate it");
+        } catch (Exception e) {
+            temporary.delete();
+            showError("Could not import platform source: " + e.getMessage());
+        }
+    }
+
+    private boolean isCompatiblePlatformSource(File file) {
+        boolean hasActivity = false;
+        boolean hasPlatformJar = false;
+        try (ZipInputStream zip = new ZipInputStream(new java.io.FileInputStream(file))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                String name = entry.getName();
+                if ("android/app/Activity.class".equals(name)) hasActivity = true;
+                if (name.matches("(^|.*/)android-35/android\\.jar")) hasPlatformJar = true;
+                if (hasActivity || hasPlatformJar) return true;
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
+        return false;
+    }
+
+    private String publishPlatformSource(File source) throws IOException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            throw new IOException("Android 10 or newer is required to share the source with Termux");
+        }
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Downloads.DISPLAY_NAME, "appid-platform-source.zip");
+        values.put(MediaStore.Downloads.MIME_TYPE, "application/zip");
+        values.put(MediaStore.Downloads.RELATIVE_PATH, "Download/com.focsd.appid");
+        Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+        if (uri == null) throw new IOException("could not create a shared Downloads file");
+        try (InputStream input = new java.io.FileInputStream(source);
+             java.io.OutputStream output = getContentResolver().openOutputStream(uri)) {
+            if (output == null) throw new IOException("could not open the shared Downloads file");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+        } catch (Exception e) {
+            getContentResolver().delete(uri, null, null);
+            if (e instanceof IOException) throw (IOException) e;
+            throw new IOException(e.getMessage(), e);
+        }
+        return "Download/com.focsd.appid/appid-platform-source.zip";
     }
 
     private void checkEnvironment() {
@@ -462,6 +728,28 @@ abstract class AppIdActivity extends Activity {
             );
         } catch (IOException e) {
             showError("Could not read the environment checker: " + e.getMessage());
+        }
+    }
+
+    private void confirmResetEnvironment() {
+        if (isOperationRunning()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Reset AppId environment?")
+                .setMessage("This deletes only AppId's private Termux workspace, including its platform JAR, builder, template, signing key, and generated output. Shared Termux packages are kept installed.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Reset", (dialog, which) -> resetEnvironment())
+                .show();
+    }
+
+    private void resetEnvironment() {
+        if (!preflightTermux()) return;
+        try {
+            String script = readAsset("reset_termux_environment.sh");
+            String token = startProgress("Reset AppId environment", "reset", null);
+            runTermuxCommand(TERMUX_BASH, new String[]{"-c", script, "focsd-appid-reset"}, null,
+                    true, token);
+        } catch (IOException e) {
+            showError("Could not read the reset script: " + e.getMessage());
         }
     }
 
@@ -503,8 +791,16 @@ abstract class AppIdActivity extends Activity {
         String title = selectedApp.label;
         String packageId = selectedApp.packageName;
         String reason = reasonInput.getText().toString().trim();
+        if (reasonChoice != null && reasonChoice.getSelectedItemPosition() != 10) {
+            reason = String.valueOf(reasonChoice.getSelectedItem());
+        }
+        String trigger = triggerChoice == null ? "" : String.valueOf(triggerChoice.getSelectedItem());
+        if (triggerChoice != null && triggerChoice.getSelectedItemPosition() == 9) {
+            trigger = triggerInput.getText().toString().trim();
+        }
         String replacementAction = actionInput.getText().toString().trim();
-        String color = DEFAULT_COLOR;
+        String color = reuseIconColorInput != null && reuseIconColorInput.isChecked()
+                ? iconColorFor(selectedApp) : DEFAULT_COLOR;
 
         if (reason.isEmpty()) {
             showError("Enter why you are removing " + title + ".");
@@ -522,7 +818,7 @@ abstract class AppIdActivity extends Activity {
         String environmentReport = OperationStore.snapshot(this)
                 .getString(OperationStore.KEY_REPORT, "");
         if (!environmentReport.contains("OK       environment schema: 5") ||
-                !environmentReport.contains("OK       replacement template: version 2") ||
+                !environmentReport.contains("OK       replacement template: version 4") ||
                 !environmentReport.contains("OK       launcher icon renderer: version 2") ||
                 !environmentReport.contains("READY    All required dependencies are available.")) {
             new AlertDialog.Builder(this)
@@ -553,6 +849,7 @@ abstract class AppIdActivity extends Activity {
                 replacementAction.getBytes(StandardCharsets.UTF_8),
                 Base64.NO_WRAP
         );
+        String triggerB64 = Base64.encodeToString(trigger.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
 
         new AlertDialog.Builder(this)
                 .setTitle("Create replacement for " + title + "?")
@@ -579,6 +876,7 @@ abstract class AppIdActivity extends Activity {
                                     "--title-b64", titleB64,
                                     "--reason-b64", reasonB64,
                                     "--action-b64", actionB64,
+                                    "--trigger-b64", triggerB64,
                                     "--color", color.substring(1),
                                     "--install", "0",
                                     "--progress-token", progressToken
@@ -664,7 +962,7 @@ abstract class AppIdActivity extends Activity {
 
     private boolean preflightTermux() {
         if (!isPackageInstalled(TERMUX_PACKAGE)) {
-            showError("Termux is not installed or not visible to AppId.");
+            showMissingTermux();
             return false;
         }
         if (!hasRunCommandSupport()) {
@@ -694,6 +992,22 @@ abstract class AppIdActivity extends Activity {
         Intent intent = new Intent();
         intent.setClassName(TERMUX_PACKAGE, TERMUX_SERVICE);
         intent.setAction(TERMUX_ACTION_RUN_COMMAND);
+        for (String arg : args) {
+            if (arg == null || !arg.startsWith("content://")) continue;
+            Uri platformUri = Uri.parse(arg);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            // Put the URI in the data slot as well as ClipData/EXTRA_STREAM. Some
+            // Termux/Android combinations propagate grants only from intent data.
+            intent.setData(platformUri);
+            intent.setClipData(ClipData.newRawUri("AppId platform source", platformUri));
+            intent.putExtra(Intent.EXTRA_STREAM, platformUri);
+            try {
+                grantUriPermission(TERMUX_PACKAGE, platformUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (SecurityException ignored) {
+                // The intent grant below remains the normal fallback.
+            }
+            break;
+        }
         intent.putExtra("com.termux.RUN_COMMAND_PATH", commandPath);
         intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", args);
         intent.putExtra("com.termux.RUN_COMMAND_WORKDIR", TERMUX_HOME);
@@ -727,11 +1041,18 @@ abstract class AppIdActivity extends Activity {
             OperationStore.failToStart(this, operationToken,
                     e.getClass().getSimpleName() + ": " + e.getMessage());
             restoreOperationUi();
-            showError(
-                    "Could not start the Termux command. Check allow-external-apps=true and the Termux RUN_COMMAND permission.\n\n" +
-                    e.getClass().getSimpleName() + ": " + e.getMessage()
-            );
+            showTermuxStartRecovery(e);
         }
+    }
+
+    private void showTermuxStartRecovery(Exception error) {
+        String detail = error.getClass().getSimpleName() + ": " + error.getMessage();
+        new AlertDialog.Builder(this)
+                .setTitle("Termux needs to be opened once")
+                .setMessage("Android blocked the background Termux command because Termux is stopped or restricted. Open Termux, leave it running for a moment, then return and try again.\n\n" + detail)
+                .setNegativeButton("Close", null)
+                .setPositiveButton("Open Termux", (dialog, which) -> openTermux())
+                .show();
     }
 
     private void runTermuxCancelCommand(String script, String operationToken) {
@@ -844,10 +1165,33 @@ abstract class AppIdActivity extends Activity {
     private void openTermux() {
         Intent launch = getPackageManager().getLaunchIntentForPackage(TERMUX_PACKAGE);
         if (launch == null) {
-            showError("Termux is not installed.");
+            showMissingTermux();
             return;
         }
-        startActivity(launch);
+        try {
+            startActivity(launch);
+        } catch (Exception error) {
+            showError("Could not open Termux. Check Android's background-start restrictions and open Termux from its launcher once.");
+        }
+    }
+
+    private void showMissingTermux() {
+        new AlertDialog.Builder(this)
+                .setTitle("Install Termux to continue")
+                .setMessage("AppId delegates setup and APK creation to Termux. Install the maintained F-Droid or official GitHub release, open Termux once, then return here. The Google Play build does not provide the required RUN_COMMAND integration.")
+                .setNegativeButton("Close", null)
+                .setNeutralButton("F-Droid", (d, w) -> openExternalUrl(TERMUX_FDROID_PAGE))
+                .setPositiveButton("GitHub guide", (d, w) -> openExternalUrl(TERMUX_INSTALL_GUIDE))
+                .show();
+    }
+
+    private void openExternalUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            copyText("Termux installation URL", url);
+            toast("No browser available; the link was copied");
+        }
     }
 
     private void requestOrOpenRunCommandPermission() {
@@ -912,10 +1256,32 @@ abstract class AppIdActivity extends Activity {
                 )
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Open uninstall", (d, w) -> {
-                    Intent i = new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + packageId));
-                    startActivity(i);
+                    openUninstaller(packageId);
                 })
                 .show();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void openUninstaller(String packageName) {
+        Uri packageUri = Uri.parse("package:" + packageName);
+        Intent uninstall = new Intent(Intent.ACTION_UNINSTALL_PACKAGE, packageUri);
+        uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
+        try {
+            startActivity(uninstall);
+            return;
+        } catch (Exception ignored) {
+            // Fall through for vendor package managers that only expose ACTION_DELETE.
+        }
+        try {
+            startActivity(new Intent(Intent.ACTION_DELETE, packageUri));
+        } catch (Exception ignored) {
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
+                toast("Open App info and choose Uninstall");
+            } catch (Exception error) {
+                showError("Android could not open the uninstaller for " + packageName + ".");
+            }
+        }
     }
 
     private String validatedPackageOrNull() {
@@ -990,7 +1356,7 @@ abstract class AppIdActivity extends Activity {
                     .getString(OperationStore.KEY_REPORT, "");
             boolean ready = permission &&
                     report.contains("OK       environment schema: 5") &&
-                    report.contains("OK       replacement template: version 2") &&
+                    report.contains("OK       replacement template: version 4") &&
                     report.contains("READY    All required dependencies are available.");
             if (ready) {
                 creatorSetupStatus.setText("✓ Builder ready");
@@ -1141,6 +1507,7 @@ abstract class AppIdActivity extends Activity {
             installed = manager.getInstalledApplications(PackageManager.GET_META_DATA);
         }
         List<ReplaceableApp> choices = new ArrayList<>();
+        choices.add(new ReplaceableApp("- Select -", null, false));
         for (ApplicationInfo info : installed) {
             boolean system = (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0 ||
                     (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
@@ -1171,6 +1538,26 @@ abstract class AppIdActivity extends Activity {
                     break;
                 }
             }
+        }
+        updateSelectedAppIcon();
+    }
+
+    private void updateSelectedAppIcon() {
+        if (appIconPreview == null) return;
+        ReplaceableApp app = selectedApp();
+        if (app == null) {
+            appIconPreview.setImageDrawable(null);
+            appIconPreview.setVisibility(View.INVISIBLE);
+            if (creatorHeading != null) creatorHeading.setText("Replace an app with a better choice");
+            return;
+        }
+        try {
+            appIconPreview.setImageDrawable(getPackageManager().getApplicationIcon(app.packageName));
+            appIconPreview.setVisibility(View.VISIBLE);
+            if (creatorHeading != null) creatorHeading.setText("Replace " + app.label + " with a better choice");
+        } catch (Exception ignored) {
+            appIconPreview.setImageDrawable(null);
+            appIconPreview.setVisibility(View.INVISIBLE);
         }
     }
 
@@ -1215,6 +1602,60 @@ abstract class AppIdActivity extends Activity {
         );
         lp.setMargins(0, dp(4), 0, dp(4));
         b.setLayoutParams(lp);
+        return b;
+    }
+
+    private Spinner choiceSpinner(String[] choices) {
+        Spinner spinner = new Spinner(this);
+        spinner.setMinimumHeight(dp(52));
+        spinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, choices));
+        return spinner;
+    }
+
+    private abstract static class SimpleItemSelectedListener implements android.widget.AdapterView.OnItemSelectedListener {
+        @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        public abstract void onItemSelected(int position);
+        @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+            onItemSelected(position);
+        }
+    }
+
+    private String iconColorFor(ReplaceableApp app) {
+        try {
+            Drawable drawable = getPackageManager().getApplicationIcon(app.packageName);
+            int width = Math.max(1, drawable.getIntrinsicWidth());
+            int height = Math.max(1, drawable.getIntrinsicHeight());
+            width = Math.min(width, 64);
+            height = Math.min(height, 64);
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, width, height);
+            drawable.draw(canvas);
+            long red = 0, green = 0, blue = 0, count = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int pixel = bitmap.getPixel(x, y);
+                    if (Color.alpha(pixel) < 32) continue;
+                    red += Color.red(pixel);
+                    green += Color.green(pixel);
+                    blue += Color.blue(pixel);
+                    count++;
+                }
+            }
+            bitmap.recycle();
+            if (count == 0) return DEFAULT_COLOR;
+            return String.format(Locale.US, "#%02X%02X%02X",
+                    red / count, green / count, blue / count);
+        } catch (Exception ignored) {
+            return DEFAULT_COLOR;
+        }
+    }
+
+    private Button requiredButton(String label, View.OnClickListener listener) {
+        Button b = button(label, listener);
+        b.setTextColor(Color.WHITE);
+        b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(45, 79, 150)));
         return b;
     }
 

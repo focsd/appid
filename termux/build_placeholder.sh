@@ -15,6 +15,7 @@ PACKAGE_ID=""
 TITLE_B64=""
 REASON_B64=""
 ACTION_B64=""
+TRIGGER_B64=""
 COLOR_HEX="F2F2F2"
 INSTALL_AFTER=0
 PREPARE_ONLY=0
@@ -46,7 +47,7 @@ usage() {
 AppId placeholder builder
 
 Usage:
-  build_placeholder.sh --package com.example.app --title-b64 BASE64 --reason-b64 BASE64 --action-b64 BASE64 --color F2F2F2 [--install 0|1]
+  build_placeholder.sh --package com.example.app --title-b64 BASE64 --reason-b64 BASE64 --action-b64 BASE64 --trigger-b64 BASE64 --color F2F2F2 [--install 0|1]
   build_placeholder.sh --prepare-only
 USAGE
 }
@@ -67,6 +68,10 @@ while [ "$#" -gt 0 ]; do
             ;;
         --action-b64)
             ACTION_B64="${2:-}"
+            shift 2
+            ;;
+        --trigger-b64)
+            TRIGGER_B64="${2:-}"
             shift 2
             ;;
         --color)
@@ -164,8 +169,11 @@ import java.io.UnsupportedEncodingException;
 public final class TemplateActivity extends Activity {
     private String placeholderTitle = "Pause";
     private String reason = "I want to focus on what matters.";
+    private String trigger = "";
     private String replacementAction = "DO SOMETHING BETTER";
     private String colorHex = "F2F2F2";
+    private int foregroundColor;
+    private int secondaryColor;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -189,6 +197,7 @@ public final class TemplateActivity extends Activity {
                 placeholderTitle = new String(Base64.decode(titleB64, Base64.DEFAULT), "UTF-8");
                 reason = decodeOrDefault(reasonB64, reason);
                 replacementAction = decodeOrDefault(actionB64, replacementAction);
+                trigger = decodeOrDefault(meta.getString("app.placeholder.triggerB64", ""), "");
             } catch (UnsupportedEncodingException ignored) {
                 placeholderTitle = "Pause";
             }
@@ -197,15 +206,24 @@ public final class TemplateActivity extends Activity {
     }
 
     private void render() {
-        int background;
-        try {
-            background = Color.parseColor("#" + colorHex);
-        } catch (Exception ignored) {
-            background = Color.rgb(242, 242, 242);
-        }
+        // The selected color belongs to the launcher icon only. The opened
+        // placeholder deliberately uses the device's current appearance so
+        // an original blue, red, or purple app never tints this screen.
+        boolean night = (getResources().getConfiguration().uiMode
+                & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        int background = night ? Color.rgb(28, 30, 34) : Color.rgb(250, 250, 252);
+        int headerBackground = night ? Color.rgb(36, 39, 45) : Color.rgb(242, 243, 247);
+        foregroundColor = night ? Color.rgb(242, 242, 246) : Color.rgb(45, 45, 50);
+        secondaryColor = night ? Color.rgb(190, 194, 204) : Color.rgb(92, 96, 105);
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(background);
+
+        View header = new View(this);
+        header.setBackgroundColor(headerBackground);
+        root.addView(header, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, dp(64), Gravity.TOP));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -216,9 +234,11 @@ public final class TemplateActivity extends Activity {
         scroll.addView(content, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT,
                 ScrollView.LayoutParams.MATCH_PARENT));
-        root.addView(scroll, new FrameLayout.LayoutParams(
+        FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
+                FrameLayout.LayoutParams.MATCH_PARENT);
+        scrollParams.topMargin = dp(64);
+        root.addView(scroll, scrollParams);
 
         TextView reasonHeading = messageText("You removed " + placeholderTitle + " because:", 22f);
         content.addView(reasonHeading);
@@ -230,6 +250,15 @@ public final class TemplateActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         reasonParams.setMargins(0, dp(24), 0, dp(34));
         content.addView(reasonText, reasonParams);
+
+        if (!trigger.isEmpty()) {
+            TextView triggerText = messageText("Usually triggered by: " + trigger, 16f);
+            triggerText.setTextColor(secondaryColor);
+            LinearLayout.LayoutParams triggerParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            triggerParams.setMargins(0, 0, 0, dp(20));
+            content.addView(triggerText, triggerParams);
+        }
 
         TextView insteadHeading = messageText("Instead:", 22f);
         content.addView(insteadHeading);
@@ -245,7 +274,7 @@ public final class TemplateActivity extends Activity {
         TextView menu = new TextView(this);
         menu.setText("⋮");
         menu.setTextSize(30f);
-        menu.setTextColor(Color.rgb(70, 70, 70));
+        menu.setTextColor(secondaryColor);
         menu.setGravity(Gravity.CENTER);
         menu.setClickable(true);
         menu.setFocusable(true);
@@ -305,7 +334,7 @@ public final class TemplateActivity extends Activity {
         TextView text = new TextView(this);
         text.setText(value);
         text.setTextSize(size);
-        text.setTextColor(Color.rgb(55, 55, 55));
+        text.setTextColor(foregroundColor);
         text.setGravity(Gravity.CENTER_HORIZONTAL);
         return text;
     }
@@ -498,7 +527,7 @@ prepare_template() {
     local source="$TEMPLATE_DIR/src/app/placeholder/TemplateActivity.java"
     local dex="$TEMPLATE_DIR/dex/classes.dex"
     local version_file="$TEMPLATE_DIR/template-version"
-    local template_version="2"
+    local template_version="4"
 
     if [ -s "$dex" ] && [ -f "$source" ] && [ -f "$version_file" ] &&
             [ "$(tr -d '\r\n' < "$version_file")" = "$template_version" ]; then
@@ -642,8 +671,7 @@ cat > "$MANIFEST" <<MANIFEST
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="$TITLE_XML"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:label="$TITLE_XML">
 
         <meta-data
             android:name="app.placeholder.creator"
@@ -657,6 +685,9 @@ cat > "$MANIFEST" <<MANIFEST
         <meta-data
             android:name="app.placeholder.actionB64"
             android:value="$ACTION_B64" />
+        <meta-data
+            android:name="app.placeholder.triggerB64"
+            android:value="$TRIGGER_B64" />
         <meta-data
             android:name="app.placeholder.color"
             android:value="$COLOR_HEX" />
