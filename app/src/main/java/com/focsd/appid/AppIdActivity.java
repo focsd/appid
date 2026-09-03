@@ -800,7 +800,7 @@ abstract class AppIdActivity extends Activity {
         String environmentReport = OperationStore.snapshot(this)
                 .getString(OperationStore.KEY_REPORT, "");
         if (!environmentReport.contains("OK       environment schema: 5") ||
-                !environmentReport.contains("OK       replacement template: version 6") ||
+                !environmentReport.contains("OK       replacement template: version 7") ||
                 !environmentReport.contains("OK       launcher icon renderer: version 2") ||
                 !environmentReport.contains("READY    All required dependencies are available.")) {
             new AlertDialog.Builder(this)
@@ -1277,7 +1277,7 @@ abstract class AppIdActivity extends Activity {
                     .getString(OperationStore.KEY_REPORT, "");
             boolean ready = permission &&
                     report.contains("OK       environment schema: 5") &&
-                    report.contains("OK       replacement template: version 6") &&
+                    report.contains("OK       replacement template: version 7") &&
                     report.contains("READY    All required dependencies are available.");
             if (ready) {
                 creatorSetupStatus.setText("✓ Builder ready");

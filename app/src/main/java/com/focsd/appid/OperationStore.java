@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 final class OperationStore {
     static final String PREFS = "operation_state";
@@ -27,6 +29,13 @@ final class OperationStore {
     static final String KEY_LATEST_APK_SEQUENCE = "latest_apk_sequence";
     static final String KEY_SEEN_APK_SEQUENCE = "seen_apk_sequence";
     static final String KEY_UPDATED_AT = "updated_at";
+
+    // Progress broadcasts can be observed by both the creator and setup
+    // activities while they coexist in the back stack. These private keys let
+    // the store collapse those identical deliveries and avoid appending live
+    // lines again when Termux returns its complete stdout transcript.
+    private static final String KEY_LAST_LIVE_LOG = "last_live_log";
+    private static final String KEY_STREAMED_OUTPUT = "streamed_output";
 
     private static final int MAX_CONSOLE_CHARS = 100_000;
 
@@ -51,6 +60,8 @@ final class OperationStore {
                 .putBoolean(KEY_INSTALL_OBSERVED, false)
                 .remove(KEY_BUILD_TITLE)
                 .remove(KEY_BUILD_COLOR)
+                .remove(KEY_LAST_LIVE_LOG)
+                .remove(KEY_STREAMED_OUTPUT)
                 .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
                 .apply();
         appendDailyLog(context, "\n=== " + startLine);
@@ -71,7 +82,11 @@ final class OperationStore {
 
     static synchronized void progress(Context context, String token, String stage, String detail, String report) {
         if (!tokenMatches(context, token)) return;
-        SharedPreferences.Editor editor = prefs(context).edit()
+        SharedPreferences preferences = prefs(context);
+        boolean duplicateProgress = value(stage).equals(
+                preferences.getString(KEY_STAGE, "")) && value(detail).equals(
+                preferences.getString(KEY_DETAIL, ""));
+        SharedPreferences.Editor editor = preferences.edit()
                 .putString(KEY_STAGE, value(stage))
                 .putString(KEY_DETAIL, value(detail))
                 .putLong(KEY_UPDATED_AT, System.currentTimeMillis());
@@ -82,7 +97,7 @@ final class OperationStore {
             editor.putString(KEY_REPORT, report);
         }
         editor.apply();
-        if (stage != null && !stage.trim().isEmpty()) {
+        if (!duplicateProgress && stage != null && !stage.trim().isEmpty()) {
             appendConsole(context, timestamp() + "  " + stage +
                     (detail == null || detail.trim().isEmpty() ? "" : " — " + detail) + "\n");
         }
@@ -90,6 +105,16 @@ final class OperationStore {
 
     static synchronized void appendLiveLog(Context context, String token, String log) {
         if (!tokenMatches(context, token) || log == null || log.trim().isEmpty()) return;
+        SharedPreferences preferences = prefs(context);
+        if (log.equals(preferences.getString(KEY_LAST_LIVE_LOG, ""))) return;
+        String streamed = preferences.getString(KEY_STREAMED_OUTPUT, "") + log + "\n";
+        if (streamed.length() > MAX_CONSOLE_CHARS) {
+            streamed = streamed.substring(streamed.length() - MAX_CONSOLE_CHARS);
+        }
+        preferences.edit()
+                .putString(KEY_LAST_LIVE_LOG, log)
+                .putString(KEY_STREAMED_OUTPUT, streamed)
+                .apply();
         appendConsole(context, log + "\n");
     }
 
@@ -105,6 +130,8 @@ final class OperationStore {
     ) {
         if (!tokenMatches(context, token)) return;
         SharedPreferences preferences = prefs(context);
+        stdout = removeStreamedOutput(
+                stdout, preferences.getString(KEY_STREAMED_OUTPUT, ""));
         if ("stopping".equals(preferences.getString(KEY_STATE, "")) ||
                 "cancelled".equals(preferences.getString(KEY_STATE, ""))) return;
         String type = preferences.getString(KEY_TYPE, "");
@@ -159,6 +186,8 @@ final class OperationStore {
                 .putString(KEY_STAGE, stage)
                 .putString(KEY_DETAIL, detail)
                 .putLong(KEY_UPDATED_AT, System.currentTimeMillis())
+                .remove(KEY_LAST_LIVE_LOG)
+                .remove(KEY_STREAMED_OUTPUT)
                 .apply();
         appendConsole(context, transcript.toString());
     }
@@ -346,6 +375,31 @@ final class OperationStore {
 
     private static String value(String value) {
         return value == null ? "" : value;
+    }
+
+    static String removeStreamedOutput(String completeOutput, String streamedOutput) {
+        if (completeOutput == null || completeOutput.isEmpty() ||
+                streamedOutput == null || streamedOutput.isEmpty()) {
+            return completeOutput;
+        }
+        Map<String, Integer> streamedCounts = new HashMap<>();
+        for (String line : streamedOutput.split("\\n", -1)) {
+            if (line.isEmpty()) continue;
+            streamedCounts.put(line, streamedCounts.getOrDefault(line, 0) + 1);
+        }
+        String[] completeLines = completeOutput.split("\\n", -1);
+        StringBuilder filtered = new StringBuilder(completeOutput.length());
+        for (int index = 0; index < completeLines.length; index++) {
+            String line = completeLines[index];
+            int remaining = streamedCounts.getOrDefault(line, 0);
+            if (remaining > 0) {
+                streamedCounts.put(line, remaining - 1);
+                continue;
+            }
+            filtered.append(line);
+            if (index < completeLines.length - 1) filtered.append('\n');
+        }
+        return filtered.toString();
     }
 
     private static String timestamp() {

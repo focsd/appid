@@ -214,6 +214,7 @@ public final class TemplateActivity extends Activity {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private void render() {
         // The selected color belongs to the launcher icon only. The opened
         // placeholder deliberately uses the device's current appearance so
@@ -580,7 +581,7 @@ prepare_icon_generator() {
     rm -rf "$TEMPLATE_DIR/icon-generator"
     mkdir -p "$TEMPLATE_DIR/icon-generator"
     write_icon_generator_source
-    javac -encoding UTF-8 -source 8 -target 8 \
+    javac -encoding UTF-8 --release 8 -Xlint:-options \
         -d "$TEMPLATE_DIR/icon-generator" "$source"
     if [ ! -s "$class_file" ]; then
         printf 'ERROR: launcher icon generator was not compiled.\n' >&2
@@ -593,7 +594,7 @@ prepare_template() {
     local source="$TEMPLATE_DIR/src/app/placeholder/TemplateActivity.java"
     local dex="$TEMPLATE_DIR/dex/classes.dex"
     local version_file="$TEMPLATE_DIR/template-version"
-    local template_version="6"
+    local template_version="7"
 
     if [ -s "$dex" ] && [ -f "$source" ] && [ -f "$version_file" ] &&
             [ "$(tr -d '\r\n' < "$version_file")" = "$template_version" ]; then
@@ -607,8 +608,8 @@ prepare_template() {
 
     javac \
         -encoding UTF-8 \
-        -source 8 \
-        -target 8 \
+        --release 8 \
+        -Xlint:-options \
         -classpath "$ANDROID_JAR" \
         -d "$TEMPLATE_DIR/classes" \
         "$source"
