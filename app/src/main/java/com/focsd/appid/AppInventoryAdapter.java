@@ -1,7 +1,6 @@
 package com.focsd.appid;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
@@ -146,19 +145,19 @@ final class AppInventoryAdapter extends BaseAdapter {
             holder.name = new TextView(context);
             holder.name.setTextSize(16f);
             holder.name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-            holder.name.setTextColor(Color.rgb(35, 35, 40));
+            holder.name.setTextColor(ThemePalette.primaryText(context));
             holder.name.setSingleLine(true);
             textColumn.addView(holder.name);
 
             holder.packageId = new TextView(context);
             holder.packageId.setTextSize(13f);
-            holder.packageId.setTextColor(Color.rgb(35, 95, 150));
+            holder.packageId.setTextColor(ThemePalette.link(context));
             holder.packageId.setSingleLine(true);
             textColumn.addView(holder.packageId);
 
             holder.meta = new TextView(context);
             holder.meta.setTextSize(12f);
-            holder.meta.setTextColor(Color.rgb(95, 95, 105));
+            holder.meta.setTextColor(ThemePalette.secondaryText(context));
             holder.meta.setMaxLines(2);
             textColumn.addView(holder.meta);
             row.setTag(holder);

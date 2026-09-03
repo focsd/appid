@@ -9,7 +9,13 @@
     <style name="AppIdTheme" parent="android:style/Theme.Material.Light.DarkActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#FAFAFC</item>
+        <item name="android:textColorPrimary">#232328</item>
+        <item name="android:textColorSecondary">#5C6069</item>
+        <item name="android:textColorLink">#235F96</item>
         <item name="android:colorAccent">#2D4F96</item>
-        <item name="android:navigationBarColor">?android:colorBackground</item>
+        <item name="android:statusBarColor">#172238</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#172238</item>
     </style>
 </resources>

@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -57,6 +56,7 @@ public final class BuiltApksActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(12), dp(16), dp(12));
+        root.setBackgroundColor(ThemePalette.background(this));
 
         TextView title = text("Built APK library", 22f);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -65,7 +65,7 @@ public final class BuiltApksActivity extends Activity {
         TextView description = text(
                 "Installed placeholders stay listed even after their installer APK is removed. Tap an entry to install, uninstall, copy its App ID, or manage its saved installer.",
                 13f);
-        description.setTextColor(Color.DKGRAY);
+        description.setTextColor(ThemePalette.secondaryText(this));
         root.addView(description);
 
         countText = text("No saved APKs", 13f);
@@ -75,6 +75,9 @@ public final class BuiltApksActivity extends Activity {
         Button deleteAll = new Button(this);
         deleteAll.setAllCaps(false);
         deleteAll.setText("Delete all saved installer APKs…");
+        deleteAll.setTextColor(ThemePalette.primaryText(this));
+        deleteAll.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                ThemePalette.mutedSurface(this)));
         deleteAll.setOnClickListener(v -> confirmDeleteAll());
         root.addView(deleteAll, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -310,7 +313,7 @@ public final class BuiltApksActivity extends Activity {
         TextView view = new TextView(this);
         view.setText(value);
         view.setTextSize(size);
-        view.setTextColor(Color.rgb(35, 35, 40));
+        view.setTextColor(ThemePalette.primaryText(this));
         return view;
     }
 
@@ -366,9 +369,9 @@ public final class BuiltApksActivity extends Activity {
                 row.title = text("", 16f);
                 row.title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
                 row.packageName = text("", 13f);
-                row.packageName.setTextColor(Color.rgb(35, 95, 150));
+                row.packageName.setTextColor(ThemePalette.link(BuiltApksActivity.this));
                 row.detail = text("", 12f);
-                row.detail.setTextColor(Color.DKGRAY);
+                row.detail.setTextColor(ThemePalette.secondaryText(BuiltApksActivity.this));
                 column.addView(row.title);
                 column.addView(row.packageName);
                 column.addView(row.detail);

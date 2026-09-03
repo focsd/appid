@@ -228,6 +228,11 @@ use AppId's neutral default color. This color is used for the launcher artwork;
 the placeholder screen itself follows Android's current light/dark system mode
 with independent high-contrast text and background colors.
 
+AppId's own creator, Setup & tools, About dialog, installed-app browser, and APK
+library also follow the current system appearance. Programmatic titles, names,
+links, controls, status cards, and console colors share one semantic palette so
+switching system mode does not leave light-only text or surfaces behind.
+
 Every successful build is also transferred into AppId's private **Built APK library**. Rebuilding an existing package ID replaces its previous library APK with the newest build. The library distinguishes an installed AppId placeholder from a real app using the same package ID and offers Android-confirmed install and uninstall actions. After a placeholder is successfully installed and you return to AppId, it deletes its private installer APK and cache copy but keeps the installed placeholder visible. Uninstalling that placeholder removes the entry when no saved installer remains.
 
 For an installed entry, its actions menu also includes **Open installed placeholder** so you can launch it directly for testing.

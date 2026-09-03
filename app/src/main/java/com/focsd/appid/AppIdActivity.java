@@ -190,7 +190,7 @@ abstract class AppIdActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(20), dp(18), dp(20), dp(20));
-        root.setBackgroundColor(Color.rgb(250, 250, 252));
+        root.setBackgroundColor(ThemePalette.background(this));
 
         LinearLayout headingRow = new LinearLayout(this);
         headingRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -198,7 +198,7 @@ abstract class AppIdActivity extends Activity {
         creatorHeading = text("Replace an app with a better choice");
         creatorHeading.setTextSize(25f);
         creatorHeading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        creatorHeading.setTextColor(Color.rgb(28, 31, 38));
+        creatorHeading.setTextColor(ThemePalette.primaryText(this));
         headingRow.addView(creatorHeading, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
@@ -211,14 +211,14 @@ abstract class AppIdActivity extends Activity {
 
         TextView intro = text("Choose the app, name your reason, and decide what to do instead.");
         intro.setTextSize(14f);
-        intro.setTextColor(Color.rgb(92, 96, 105));
+        intro.setTextColor(ThemePalette.secondaryText(this));
         intro.setPadding(0, dp(4), 0, dp(16));
         root.addView(intro);
 
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(16), dp(14), dp(16), dp(16));
-        form.setBackground(roundedBackground(Color.WHITE, 16));
+        form.setBackground(roundedBackground(ThemePalette.surface(this), 16));
         form.setElevation(dp(2));
         root.addView(form, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -297,6 +297,7 @@ abstract class AppIdActivity extends Activity {
 
         reuseIconColorInput = new CheckBox(this);
         reuseIconColorInput.setText("Reuse original icon color");
+        reuseIconColorInput.setTextColor(ThemePalette.primaryText(this));
         reuseIconColorInput.setContentDescription("Reuse original icon color");
         reuseIconColorInput.setPadding(0, dp(4), 0, 0);
         form.addView(reuseIconColorInput);
@@ -304,15 +305,15 @@ abstract class AppIdActivity extends Activity {
         Button create = button("CREATE", v -> buildPlaceholder());
         create.setAllCaps(true);
         create.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        create.setTextColor(Color.WHITE);
-        create.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(45, 79, 150)));
+        create.setTextColor(ThemePalette.onPrimaryAction());
+        create.setBackgroundTintList(ColorStateList.valueOf(ThemePalette.primaryAction(this)));
         create.setMinimumHeight(dp(52));
         form.addView(create);
 
         creatorSetupStatus = text("Checking builder status…");
         creatorSetupStatus.setTextSize(13f);
         creatorSetupStatus.setPadding(dp(12), dp(10), dp(12), dp(8));
-        creatorSetupStatus.setBackground(roundedBackground(Color.rgb(238, 241, 247), 12));
+        creatorSetupStatus.setBackground(roundedBackground(ThemePalette.mutedSurface(this), 12));
         LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -321,13 +322,13 @@ abstract class AppIdActivity extends Activity {
 
         creatorProgressText = text("No active operation");
         creatorProgressText.setTextSize(13f);
-        creatorProgressText.setTextColor(Color.rgb(92, 96, 105));
+        creatorProgressText.setTextColor(ThemePalette.secondaryText(this));
         creatorProgressText.setPadding(dp(4), dp(10), dp(4), 0);
         root.addView(creatorProgressText);
 
         TextView navigationHint = text("Setup, logs, APK library, and installed-app tools are in the top-right menu.");
         navigationHint.setTextSize(12f);
-        navigationHint.setTextColor(Color.rgb(110, 113, 120));
+        navigationHint.setTextColor(ThemePalette.secondaryText(this));
         navigationHint.setPadding(dp(4), dp(6), dp(4), 0);
         root.addView(navigationHint);
 
@@ -337,6 +338,7 @@ abstract class AppIdActivity extends Activity {
 
     private View buildSetupView() {
         ScrollView scroll = new ScrollView(this);
+        scroll.setBackgroundColor(ThemePalette.background(this));
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(18), dp(14), dp(18), dp(30));
@@ -350,7 +352,7 @@ abstract class AppIdActivity extends Activity {
         root.addView(heading);
         TextView subtitle = text("Configure Termux, inspect dependencies, and troubleshoot builds.");
         subtitle.setTextSize(14f);
-        subtitle.setTextColor(Color.DKGRAY);
+        subtitle.setTextColor(ThemePalette.secondaryText(this));
         subtitle.setPadding(0, dp(4), 0, dp(14));
         root.addView(subtitle);
 
@@ -361,9 +363,9 @@ abstract class AppIdActivity extends Activity {
                     (targetTitle == null || targetTitle.isEmpty() ? targetPackage : targetTitle) +
                     "\n" + targetPackage);
             target.setTextSize(13f);
-            target.setTextColor(Color.rgb(92, 96, 105));
+            target.setTextColor(ThemePalette.secondaryText(this));
             target.setPadding(dp(10), dp(8), dp(10), dp(8));
-            target.setBackground(roundedBackground(Color.rgb(244, 245, 248), 10));
+            target.setBackground(roundedBackground(ThemePalette.mutedSurface(this), 10));
             root.addView(target);
         }
 
@@ -371,7 +373,7 @@ abstract class AppIdActivity extends Activity {
         statusText = text("");
         statusText.setTextSize(14f);
         statusText.setPadding(dp(10), dp(8), dp(10), dp(8));
-        statusText.setBackground(roundedBackground(Color.rgb(244, 245, 248), 10));
+        statusText.setBackground(roundedBackground(ThemePalette.mutedSurface(this), 10));
         root.addView(statusText);
 
         Button copyInit = requiredButton("1. Copy first-run Termux command", v -> copyInitCommand());
@@ -396,7 +398,7 @@ abstract class AppIdActivity extends Activity {
                 "Display over other apps is not required."
         );
         firstRun.setTextSize(13f);
-        firstRun.setTextColor(Color.DKGRAY);
+        firstRun.setTextColor(ThemePalette.secondaryText(this));
         firstRun.setPadding(dp(4), dp(8), dp(4), dp(8));
         root.addView(firstRun);
 
@@ -408,7 +410,7 @@ abstract class AppIdActivity extends Activity {
         environmentText.setMovementMethod(new ScrollingMovementMethod());
         environmentText.setGravity(Gravity.TOP | Gravity.START);
         environmentText.setPadding(dp(10), dp(8), dp(10), dp(8));
-        environmentText.setBackground(roundedBackground(Color.rgb(246, 247, 249), 10));
+        environmentText.setBackground(roundedBackground(ThemePalette.mutedSurface(this), 10));
         root.addView(environmentText, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(260)));
 
@@ -426,8 +428,8 @@ abstract class AppIdActivity extends Activity {
         consoleText.setText("No command output yet.");
         consoleText.setTextSize(12f);
         consoleText.setTypeface(Typeface.MONOSPACE);
-        consoleText.setTextColor(Color.rgb(225, 235, 225));
-        consoleText.setBackgroundColor(Color.rgb(28, 31, 28));
+        consoleText.setTextColor(ThemePalette.consoleText(this));
+        consoleText.setBackgroundColor(ThemePalette.consoleSurface(this));
         consoleText.setPadding(dp(10), dp(10), dp(10), dp(10));
         consoleText.setTextIsSelectable(true);
         consoleText.setMovementMethod(new ScrollingMovementMethod());
@@ -486,7 +488,7 @@ abstract class AppIdActivity extends Activity {
         root.addView(sectionTitle("Android platform source"));
         platformSourceText = text(platformSourceDescription());
         platformSourceText.setTextSize(13f);
-        platformSourceText.setTextColor(Color.DKGRAY);
+        platformSourceText.setTextColor(ThemePalette.secondaryText(this));
         platformSourceText.setPadding(dp(4), dp(4), dp(4), dp(8));
         root.addView(platformSourceText);
         Button importPlatform = button("Import platform ZIP or android.jar", v -> importPlatformSource());
@@ -495,7 +497,7 @@ abstract class AppIdActivity extends Activity {
         root.addView(downloadPlatform);
         TextView sourceHint = text("↗ opens a separate browser/download window. After it finishes, return here and import the ZIP; AppId never downloads it directly.");
         sourceHint.setTextSize(12f);
-        sourceHint.setTextColor(Color.DKGRAY);
+        sourceHint.setTextColor(ThemePalette.secondaryText(this));
         sourceHint.setPadding(dp(4), 0, dp(4), dp(6));
         root.addView(sourceHint);
         Button clearPlatform = button("Clear imported platform source", v -> clearPlatformSource());
@@ -503,7 +505,7 @@ abstract class AppIdActivity extends Activity {
         Button manualSetup = button("Copy manual environment bootstrap", v -> copyManualEnvironmentSetup());
         TextView manualHint = text("Advanced fallback: copies the complete bootstrap command to the clipboard for manual pasting into Termux. Most users should use Install / repair environment above.");
         manualHint.setTextSize(12f);
-        manualHint.setTextColor(Color.DKGRAY);
+        manualHint.setTextColor(ThemePalette.secondaryText(this));
         manualHint.setPadding(dp(4), 0, dp(4), dp(4));
         root.addView(manualHint);
         root.addView(manualSetup);
@@ -1360,14 +1362,14 @@ abstract class AppIdActivity extends Activity {
                     report.contains("READY    All required dependencies are available.");
             if (ready) {
                 creatorSetupStatus.setText("✓ Builder ready");
-                creatorSetupStatus.setTextColor(Color.rgb(28, 105, 62));
+                creatorSetupStatus.setTextColor(ThemePalette.successText(this));
                 creatorSetupStatus.setBackground(
-                        roundedBackground(Color.rgb(232, 246, 237), 12));
+                        roundedBackground(ThemePalette.successSurface(this), 12));
             } else {
                 creatorSetupStatus.setText("Setup required • Open Setup & tools from the menu");
-                creatorSetupStatus.setTextColor(Color.rgb(135, 79, 24));
+                creatorSetupStatus.setTextColor(ThemePalette.warningText(this));
                 creatorSetupStatus.setBackground(
-                        roundedBackground(Color.rgb(252, 242, 226), 12));
+                        roundedBackground(ThemePalette.warningSurface(this), 12));
             }
         }
     }
@@ -1485,6 +1487,9 @@ abstract class AppIdActivity extends Activity {
         e.setContentDescription(hint);
         e.setSingleLine(true);
         e.setTextSize(16f);
+        e.setTextColor(ThemePalette.primaryText(this));
+        e.setHintTextColor(ThemePalette.secondaryText(this));
+        e.setBackgroundTintList(ColorStateList.valueOf(ThemePalette.link(this)));
         e.setPadding(dp(10), dp(10), dp(10), dp(10));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -1527,9 +1532,7 @@ abstract class AppIdActivity extends Activity {
             choices.add(new ReplaceableApp("No replaceable apps found", null, false));
         }
 
-        ArrayAdapter<ReplaceableApp> adapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, choices);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<ReplaceableApp> adapter = new ThemedArrayAdapter<>(this, choices);
         appInput.setAdapter(adapter);
         if (preferredPackage != null) {
             for (int index = 0; index < choices.size(); index++) {
@@ -1594,6 +1597,8 @@ abstract class AppIdActivity extends Activity {
     private Button button(String label, View.OnClickListener listener) {
         Button b = new Button(this);
         b.setText(label);
+        b.setTextColor(ThemePalette.primaryText(this));
+        b.setBackgroundTintList(ColorStateList.valueOf(ThemePalette.mutedSurface(this)));
         b.setAllCaps(false);
         b.setOnClickListener(listener);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -1608,7 +1613,7 @@ abstract class AppIdActivity extends Activity {
     private Spinner choiceSpinner(String[] choices) {
         Spinner spinner = new Spinner(this);
         spinner.setMinimumHeight(dp(52));
-        spinner.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, choices));
+        spinner.setAdapter(new ThemedArrayAdapter<>(this, java.util.Arrays.asList(choices)));
         return spinner;
     }
 
@@ -1653,16 +1658,16 @@ abstract class AppIdActivity extends Activity {
 
     private Button requiredButton(String label, View.OnClickListener listener) {
         Button b = button(label, listener);
-        b.setTextColor(Color.WHITE);
+        b.setTextColor(ThemePalette.onPrimaryAction());
         b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(45, 79, 150)));
+        b.setBackgroundTintList(ColorStateList.valueOf(ThemePalette.primaryAction(this)));
         return b;
     }
 
     private TextView text(String value) {
         TextView t = new TextView(this);
         t.setText(value);
-        t.setTextColor(Color.rgb(45, 45, 45));
+        t.setTextColor(ThemePalette.primaryText(this));
         t.setLineSpacing(0f, 1.08f);
         return t;
     }
@@ -1678,7 +1683,7 @@ abstract class AppIdActivity extends Activity {
         TextView label = text(value);
         label.setTextSize(14f);
         label.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        label.setTextColor(Color.rgb(48, 51, 58));
+        label.setTextColor(ThemePalette.primaryText(this));
         return label;
     }
 

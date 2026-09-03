@@ -13,7 +13,6 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,9 +23,11 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -71,7 +72,7 @@ public final class AppViewerActivity extends Activity {
     private View buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.WHITE);
+        root.setBackgroundColor(ThemePalette.background(this));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
@@ -81,12 +82,17 @@ public final class AppViewerActivity extends Activity {
         TextView title = text("App IDs, screen time and storage", 22f);
         header.addView(title);
         countText = text("Loading installed apps…", 13f);
-        countText.setTextColor(Color.DKGRAY);
+        countText.setTextColor(ThemePalette.secondaryText(this));
         header.addView(countText);
 
         SearchView search = new SearchView(this);
         search.setIconifiedByDefault(false);
         search.setQueryHint("Search name, App ID, or UID");
+        TextView searchText = findEditableText(search);
+        if (searchText != null) {
+            searchText.setTextColor(ThemePalette.primaryText(this));
+            searchText.setHintTextColor(ThemePalette.secondaryText(this));
+        }
         header.addView(search, matchWrap());
 
         LinearLayout filters = new LinearLayout(this);
@@ -95,15 +101,14 @@ public final class AppViewerActivity extends Activity {
 
         CheckBox includeSystem = new CheckBox(this);
         includeSystem.setText("Include system apps");
+        includeSystem.setTextColor(ThemePalette.primaryText(this));
         filters.addView(includeSystem, matchWrap());
 
         Spinner sortSpinner = new Spinner(this);
-        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item,
-                new String[]{"Sort: app name", "Sort: App ID",
+        ArrayAdapter<String> sortAdapter = new ThemedArrayAdapter<>(this,
+                java.util.Arrays.asList("Sort: app name", "Sort: App ID",
                         "Sort: screen time (highest first)",
-                        "Sort: occupied space (largest first)"});
-        sortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        "Sort: occupied space (largest first)"));
         sortSpinner.setAdapter(sortAdapter);
         filters.addView(sortSpinner, matchWrap());
 
@@ -125,7 +130,7 @@ public final class AppViewerActivity extends Activity {
         header.addView(actions, matchWrap());
 
         TextView hint = text("Tap copies App ID • Long-press opens App info", 12f);
-        hint.setTextColor(Color.DKGRAY);
+        hint.setTextColor(ThemePalette.secondaryText(this));
         header.addView(hint);
 
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -382,15 +387,29 @@ public final class AppViewerActivity extends Activity {
         TextView view = new TextView(this);
         view.setText(value);
         view.setTextSize(size);
-        view.setTextColor(Color.rgb(35, 35, 40));
+        view.setTextColor(ThemePalette.primaryText(this));
         return view;
     }
 
     private Button button(String label) {
         Button button = new Button(this);
         button.setText(label);
+        button.setTextColor(ThemePalette.primaryText(this));
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                ThemePalette.mutedSurface(this)));
         button.setAllCaps(false);
         return button;
+    }
+
+    private TextView findEditableText(View view) {
+        if (view instanceof EditText) return (TextView) view;
+        if (!(view instanceof ViewGroup)) return null;
+        ViewGroup group = (ViewGroup) view;
+        for (int index = 0; index < group.getChildCount(); index++) {
+            TextView result = findEditableText(group.getChildAt(index));
+            if (result != null) return result;
+        }
+        return null;
     }
 
     private LinearLayout.LayoutParams matchWrap() {
