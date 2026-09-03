@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppIdTheme" parent="android:style/Theme.Material.Light.DarkActionBar">
+    <style name="AppIdTheme" parent="android:style/Theme.Material">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#1C1E22</item>

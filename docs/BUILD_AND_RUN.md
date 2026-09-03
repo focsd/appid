@@ -233,5 +233,6 @@ Each operation receives a random progress token. The Termux scripts send package
 The creator and setup interfaces are persistent sibling views in `MainActivity`.
 The fixed creator view retains the selected app and typed reason/action while the
 scrollable **Setup & tools** view owns environment controls, detailed progress,
-console logs, target-app actions, and Android settings. Overflow-menu actions open
+console logs and Android settings. Per-app open, App info, uninstall, copy-ID, and
+saved-installer actions live together in the APK library. Overflow-menu actions open
 Setup & tools, the APK library, installed-app inventory, and About.

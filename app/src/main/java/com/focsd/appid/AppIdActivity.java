@@ -96,8 +96,6 @@ abstract class AppIdActivity extends Activity {
     private static final String PREFS = "appid.preferences";
     private static final String PREF_PLATFORM_SOURCE_NAME = "platform_source_name";
     private static final String PREF_PLATFORM_SOURCE_EXTERNAL = "platform_source_external";
-    static final String EXTRA_TARGET_PACKAGE = "com.focsd.appid.extra.TARGET_PACKAGE";
-    static final String EXTRA_TARGET_TITLE = "com.focsd.appid.extra.TARGET_TITLE";
     private static final String STATE_SETUP_VIEW = "setup_view";
     private static final String STATE_SELECTED_PACKAGE = "selected_package";
     private static final String STATE_REASON = "reason";
@@ -356,19 +354,6 @@ abstract class AppIdActivity extends Activity {
         subtitle.setPadding(0, dp(4), 0, dp(14));
         root.addView(subtitle);
 
-        String targetTitle = getIntent().getStringExtra(EXTRA_TARGET_TITLE);
-        String targetPackage = getIntent().getStringExtra(EXTRA_TARGET_PACKAGE);
-        if (targetPackage != null && !targetPackage.isEmpty()) {
-            TextView target = text("Selected app: " +
-                    (targetTitle == null || targetTitle.isEmpty() ? targetPackage : targetTitle) +
-                    "\n" + targetPackage);
-            target.setTextSize(13f);
-            target.setTextColor(ThemePalette.secondaryText(this));
-            target.setPadding(dp(10), dp(8), dp(10), dp(8));
-            target.setBackground(roundedBackground(ThemePalette.mutedSurface(this), 10));
-            root.addView(target);
-        }
-
         root.addView(sectionTitle("Termux connection"));
         statusText = text("");
         statusText.setTextSize(14f);
@@ -466,22 +451,6 @@ abstract class AppIdActivity extends Activity {
         root.addView(consoleActions);
         Button copyDailyLog = button("Copy today's saved log", v -> copyTodayLog());
         root.addView(copyDailyLog);
-
-        root.addView(spacer(18));
-        root.addView(sectionTitle("Selected app actions"));
-
-        TextView replacementNote = text(
-                "Android will not update an installed third-party app with a placeholder signed by a different key. " +
-                "For the same package ID, uninstall the original first, then install the placeholder. " +
-                "To restore the original later, uninstall the placeholder first."
-        );
-        replacementNote.setTextSize(14f);
-        root.addView(replacementNote);
-
-        Button info = button("Open target app info", v -> openTargetInfo());
-        root.addView(info);
-        Button uninstall = button("Uninstall target…", v -> confirmUninstall());
-        root.addView(uninstall);
 
         root.addView(spacer(18));
         root.addView(sectionTitle("Advanced & Android settings"));
@@ -1236,67 +1205,6 @@ abstract class AppIdActivity extends Activity {
         startActivity(i);
     }
 
-    private void openTargetInfo() {
-        String packageId = validatedPackageOrNull();
-        if (packageId == null) return;
-        try {
-            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + packageId)));
-        } catch (Exception e) {
-            showError("Android could not open app info for " + packageId + ".");
-        }
-    }
-
-    private void confirmUninstall() {
-        String packageId = validatedPackageOrNull();
-        if (packageId == null) return;
-        new AlertDialog.Builder(this)
-                .setTitle("Uninstall target app?")
-                .setMessage(
-                        "Android will show its normal uninstall confirmation for:\n\n" + packageId +
-                        "\n\nUninstalling can delete that app's local data. AppId does not bypass the system confirmation."
-                )
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Open uninstall", (d, w) -> {
-                    openUninstaller(packageId);
-                })
-                .show();
-    }
-
-    @SuppressWarnings("deprecation")
-    private void openUninstaller(String packageName) {
-        Uri packageUri = Uri.parse("package:" + packageName);
-        Intent uninstall = new Intent(Intent.ACTION_UNINSTALL_PACKAGE, packageUri);
-        uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
-        try {
-            startActivity(uninstall);
-            return;
-        } catch (Exception ignored) {
-            // Fall through for vendor package managers that only expose ACTION_DELETE.
-        }
-        try {
-            startActivity(new Intent(Intent.ACTION_DELETE, packageUri));
-        } catch (Exception ignored) {
-            try {
-                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
-                toast("Open App info and choose Uninstall");
-            } catch (Exception error) {
-                showError("Android could not open the uninstaller for " + packageName + ".");
-            }
-        }
-    }
-
-    private String validatedPackageOrNull() {
-        if (showingSetup) {
-            String targetPackage = getIntent().getStringExtra(EXTRA_TARGET_PACKAGE);
-            if (InputRules.isPackageId(targetPackage)) return targetPackage;
-            showError("Return to Create, choose an installed app, then open Setup & tools again.");
-            return null;
-        }
-        ReplaceableApp selected = selectedAppOrNull();
-        return selected == null ? null : selected.packageName;
-    }
-
     private boolean isPackageInstalled(String packageName) {
         try {
             getPackageManager().getPackageInfo(packageName, 0);
@@ -1424,13 +1332,7 @@ abstract class AppIdActivity extends Activity {
             return true;
         }
         if (item.getItemId() == MENU_PRIMARY_VIEW) {
-            Intent setup = new Intent(this, SetupActivity.class);
-            ReplaceableApp selected = selectedApp();
-            if (selected != null) {
-                setup.putExtra(EXTRA_TARGET_PACKAGE, selected.packageName);
-                setup.putExtra(EXTRA_TARGET_TITLE, selected.label);
-            }
-            startActivity(setup);
+            startActivity(new Intent(this, SetupActivity.class));
             return true;
         }
         if (item.getItemId() == MENU_APK_LIBRARY) {

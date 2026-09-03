@@ -19,7 +19,7 @@ F-Droid packaging: [release and submission guide](docs/FDROID.md)
 The main screen keeps the complete replacement form visible without mixing it with
 setup controls. Open the top-right menu for **Setup & tools**, **APK library**,
 **Installed apps**, and **About**. Setup & tools contains Termux onboarding,
-dependency status, operation progress, console logs, selected-app actions, and
+dependency status, operation progress, console logs, and
 Android installation settings.
 
 It also includes a separate **Installed apps, App IDs, screen time & storage** view, adapted from the sibling AppIdViewer project. That view searches installed packages, optionally includes system apps, sorts by app name, App ID, today's screen time, or occupied space, copies visible IDs, opens Android App info on long-press, and displays today's per-app foreground time and occupied space when Usage Access is granted.
@@ -251,7 +251,7 @@ In Termux's result bundle, internal error value `-1` means there was no Termux s
 
 Termux returns every generated APK to AppId instead of using `termux-open`. AppId validates it and saves it in the private APK library. When the user later chooses **Install**, AppId exposes only that file through a temporary read-only content URI and opens Android's confirmed package installer. A missing, invalid, or oversized transfer is reported as a build failure.
 
-If the original package is still installed, installation will normally fail because the signatures differ. Use **Uninstall target…** first if you deliberately want the placeholder to occupy that package ID.
+If the original package is still installed, installation will normally fail because the signatures differ. Open that entry in the **APK library** and choose **Uninstall real app…** if you deliberately want the placeholder to occupy that package ID.
 
 ## Generated APK design
 

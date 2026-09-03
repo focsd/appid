@@ -63,7 +63,7 @@ public final class BuiltApksActivity extends Activity {
         root.addView(title);
 
         TextView description = text(
-                "Installed placeholders stay listed even after their installer APK is removed. Tap an entry to install, uninstall, copy its App ID, or manage its saved installer.",
+                "Tap an entry for its app actions: install or open it, view Android App info, uninstall it, copy its App ID, or manage the saved installer. Android requires the original app to be uninstalled before a differently signed placeholder can use the same App ID.",
                 13f);
         description.setTextColor(ThemePalette.secondaryText(this));
         root.addView(description);
@@ -125,6 +125,7 @@ public final class BuiltApksActivity extends Activity {
                 ? "Install placeholder (real app must be uninstalled first)" : "Install APK");
         if (record.installed) {
             actions.add("Open installed " + (record.installedPlaceholder ? "placeholder" : "app"));
+            actions.add("Open Android App info");
             actions.add(record.installedPlaceholder
                     ? "Uninstall placeholder…" : "Uninstall real app…");
         }
@@ -137,6 +138,7 @@ public final class BuiltApksActivity extends Activity {
                             String action = actions.get(which);
                             if (action.startsWith("Install")) install(record);
                             else if (action.startsWith("Open installed")) openInstalled(record.packageName);
+                            else if (action.startsWith("Open Android")) openAppInfo(record.packageName);
                             else if (action.startsWith("Uninstall")) confirmUninstall(record);
                             else if (action.startsWith("Copy")) copyPackage(record.packageName);
                             else confirmDelete(record);
@@ -155,6 +157,15 @@ public final class BuiltApksActivity extends Activity {
             startActivity(launch);
         } catch (Exception error) {
             toast("Could not open " + packageName + ": " + error.getMessage());
+        }
+    }
+
+    private void openAppInfo(String packageName) {
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + packageName)));
+        } catch (Exception error) {
+            toast("Android could not open App info for " + packageName);
         }
     }
 
