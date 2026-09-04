@@ -42,9 +42,13 @@ must be run from its final committed source and again from the published tag.
   passed source scanning, metadata checks, and the unsigned APK build.
 - [x] Confirm the new publisher certificate fingerprint and update the
   fdroiddata metadata generator.
-- [ ] Upload the publisher-signed GitHub asset `AppId-v0.12.1.apk`; this needs
-  the protected FOCSD signing keystore and passwords.
-- [ ] Complete Docker binary comparison after the signed asset is uploaded.
+- [x] Upload the publisher-signed GitHub asset `AppId-v0.12.1.apk` and verify
+  its certificate and binary comparison.
+- [x] Complete Docker binary comparison for the exact public tag. Final Docker
+  APK SHA-256: `e051c54b91f5b0f6e6f775fab48e6e3b9cb988289edf1c7a86a91377cc3eb0df`.
+- [x] The remaining API 35 warning is from fdroidserver's bundled Androguard
+  API table, which currently tops out at API 34; it is nonfatal and does not
+  indicate an AppId build or signing problem.
 - [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
   passes against the exact public tag.
 
