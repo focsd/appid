@@ -135,9 +135,9 @@ the production keystore at its secure location:
 
 It prompts for the keystore path, alias, and passwords without accepting passwords
 as command-line arguments; verifies the configured publisher certificate; builds
-the signed asset; creates or updates the GitHub release; runs the exact-tag Docker
-comparison; and writes the fdroiddata candidate. It never stores credentials in
-the repository.
+the signed asset inside the pinned Java 21 Docker image; creates or updates the
+GitHub release; runs the exact-tag Docker comparison; and writes the fdroiddata
+candidate. It never stores credentials in the repository.
 
 Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK;
 publisher signing secrets must never be added to either repository.

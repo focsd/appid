@@ -24,6 +24,7 @@ repo_root=$(release_repo_root)
 cd "$repo_root"
 release_require_tool gh
 release_require_tool keytool
+release_require_tool docker
 release_require_clean_tree
 
 version_name=$(release_read_version_name "$repo_root/app/build.gradle")
@@ -54,6 +55,7 @@ export FOCSD_APPID_STORE_PASSWORD
 export FOCSD_APPID_KEY_PASSWORD
 
 cleanup() {
+    [ -z "${secret_env:-}" ] || rm -f "$secret_env"
     unset FOCSD_APPID_KEYSTORE FOCSD_APPID_KEY_ALIAS \
         FOCSD_APPID_STORE_PASSWORD FOCSD_APPID_KEY_PASSWORD
 }
@@ -78,7 +80,31 @@ remote_commit=$(git ls-remote origin "refs/tags/$tag^{}" | awk 'NR == 1 { print 
     || release_die "local and origin $tag do not resolve to the same commit"
 
 ./scripts/verify_fdroid_release.sh --ref "$tag"
-./gradlew --no-daemon clean lintRelease testDebugUnitTest assemblePublisherRelease
+
+fdroid_image=${FDROID_RELEASE_IMAGE:-appid/fdroid-release:2.4.2-android35}
+if ! docker image inspect "$fdroid_image" >/dev/null 2>&1; then
+    docker build --platform linux/amd64 \
+        --file "$repo_root/docker/fdroid/Dockerfile" \
+        --tag "$fdroid_image" "$repo_root/docker/fdroid"
+fi
+
+umask 077
+secret_env=$(mktemp "${TMPDIR:-/tmp}/appid-publisher-env.XXXXXX")
+printf 'FOCSD_APPID_KEYSTORE=/run/secrets/appid-release.jks\n' >"$secret_env"
+{
+    printf 'FOCSD_APPID_KEY_ALIAS=%s\n' "$FOCSD_APPID_KEY_ALIAS"
+    printf 'FOCSD_APPID_STORE_PASSWORD=%s\n' "$FOCSD_APPID_STORE_PASSWORD"
+    printf 'FOCSD_APPID_KEY_PASSWORD=%s\n' "$FOCSD_APPID_KEY_PASSWORD"
+} >>"$secret_env"
+
+docker run --rm --platform linux/amd64 \
+    --volume "$repo_root:/workspace" \
+    --volume "$keystore:/run/secrets/appid-release.jks:ro" \
+    --env-file "$secret_env" \
+    --workdir /workspace \
+    "$fdroid_image" \
+    /bin/bash -c 'set -euo pipefail
+        ./gradlew --no-daemon clean lintRelease testDebugUnitTest assemblePublisherRelease'
 
 publisher_apk="$repo_root/app/build/outputs/apk/release/app-release.apk"
 [ -s "$publisher_apk" ] || release_die "publisher APK not found: $publisher_apk"
