@@ -49,8 +49,10 @@ must be run from its final committed source and again from the published tag.
 - [x] The remaining API 35 warning is from fdroidserver's bundled Androguard
   API table, which currently tops out at API 34; it is nonfatal and does not
   indicate an AppId build or signing problem.
-- [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
-  passes against the exact public tag.
+- [x] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
+  passes against the exact public tag. Updated [fdroiddata merge request
+  !45471](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/45471) with
+  commit `bbf41c1b58`.
 
 On 2026-08-11, AppId 0.11.1 (29) was validated in Docker with fdroidserver
 2.4.2 (upstream commit `6af4c421`), OpenJDK 21, Gradle 8.11.1, Android platform
