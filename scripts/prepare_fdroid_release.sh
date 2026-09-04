@@ -7,7 +7,7 @@ source "$SCRIPT_DIR/release_lib.sh"
 
 usage() {
     printf 'Usage: %s VERSION VERSION_CODE CHANGELOG_FILE\n' "$(basename "$0")" >&2
-    printf 'Example: %s 0.12.0 29 /tmp/0.12.0.txt\n' "$(basename "$0")" >&2
+    printf 'Example: %s 0.12.1 31 /tmp/0.12.1.txt\n' "$(basename "$0")" >&2
     exit 2
 }
 

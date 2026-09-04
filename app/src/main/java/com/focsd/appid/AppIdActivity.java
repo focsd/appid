@@ -383,7 +383,7 @@ abstract class AppIdActivity extends Activity {
         root.addView(permission);
         Button storagePermission = button("Grant Termux storage access", v -> openTermuxStorageSettings());
         root.addView(storagePermission);
-        Button setup = requiredButton("4. Install / repair environment", v -> setupBuilder());
+        Button setup = requiredButton("4. Install / repair environment", v -> confirmSetupBuilder());
         root.addView(setup);
         Button check = button("Check dependencies now", v -> checkEnvironment());
         root.addView(check);
@@ -391,7 +391,9 @@ abstract class AppIdActivity extends Activity {
         TextView firstRun = text(
                 "First run: paste the copied command into Termux, fully close and reopen Termux, " +
                 "grant the additional Run commands permission, then install the environment. " +
-                "Display over other apps is not required."
+                "Setup installs free-software build tools in Termux. If an Android platform file " +
+                "is not already available, Termux downloads the checksum-verified platform archive " +
+                "documented below. Display over other apps is not required."
         );
         firstRun.setTextSize(13f);
         firstRun.setTextColor(ThemePalette.secondaryText(this));
@@ -518,7 +520,28 @@ abstract class AppIdActivity extends Activity {
         restoreOperationUi();
     }
 
-    private void setupBuilder() {
+    private void confirmSetupBuilder() {
+        if (isOperationRunning()) return;
+        if (!preflightTermux()) return;
+        String importedName = getSharedPreferences(PREFS, MODE_PRIVATE)
+                .getString(PREF_PLATFORM_SOURCE_NAME, "");
+        String platformExplanation = importedName.isEmpty()
+                ? "If Termux does not already have the Android platform compiler file, it will " +
+                "download the SHA-256-verified Android SDK Platform 35 archive from the documented " +
+                "Google URL. This download happens outside F-Droid and is used only as build input."
+                : "Setup will use your imported Android platform file (“" + importedName + "”) " +
+                "instead of downloading the platform archive.";
+        new AlertDialog.Builder(this)
+                .setTitle("Install build environment?")
+                .setMessage("Termux will install or repair the free-software compiler and packaging " +
+                        "tools needed to create placeholder APKs.\n\n" + platformExplanation +
+                        "\n\nAppId never installs a generated APK without Android showing its confirmation screen.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Continue", (dialog, which) -> startBuilderSetup())
+                .show();
+    }
+
+    private void startBuilderSetup() {
         if (isOperationRunning()) return;
         if (!preflightTermux()) return;
         try {
@@ -807,7 +830,7 @@ abstract class AppIdActivity extends Activity {
                     .setTitle("Termux environment is not ready")
                     .setMessage("Complete Install / repair full environment and wait for the dependency audit to report READY before building an APK.")
                     .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Install / repair", (dialog, which) -> setupBuilder())
+                    .setPositiveButton("Install / repair", (dialog, which) -> confirmSetupBuilder())
                     .show();
             return;
         }

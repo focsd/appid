@@ -4,7 +4,6 @@ set -euo pipefail
 SERIAL="${ANDROID_SERIAL:-}"
 ADB="${ADB:-$HOME/Library/Android/sdk/platform-tools/adb}"
 PACKAGE="com.focsd.appid"
-ACTIVITY="$PACKAGE/.MainActivity"
 INCLUDE_BUILD=0
 for arg in "$@"; do
     case "$arg" in
@@ -44,17 +43,20 @@ tap_description() {
 }
 assert_text() {
     local wanted="$1"
-    has_text "$wanted" \
-        && printf 'PASS: visible: %s\n' "$wanted" \
-        || { printf 'FAIL: not visible: %s\n' "$wanted" >&2; return 1; }
+    if has_text "$wanted"; then
+        printf 'PASS: visible: %s\n' "$wanted"
+    else
+        printf 'FAIL: not visible: %s\n' "$wanted" >&2
+        return 1
+    fi
 }
 has_text() {
     local wanted="$1"
     WANTED="$wanted" dump_ui | WANTED="$wanted" perl -0777 -ne 's/&amp;/&/g; exit 0 if /text="\Q$ENV{WANTED}\E"/; exit 1'
 }
 assert_text_scroll() {
-    local wanted="$1" attempt
-    for attempt in 1 2 3 4 5 6 7 8; do
+    local wanted="$1"
+    for _ in 1 2 3 4 5 6 7 8; do
         if has_text "$wanted"; then
             printf 'PASS: visible after scroll: %s\n' "$wanted"
             return 0
@@ -98,6 +100,10 @@ assert_text 'Setup & tools'
 assert_text '1. Copy first-run Termux command'
 assert_text '2. Open Termux'
 assert_any_text '3. Grant AppId Termux permission' '3. Check Termux compatibility'
+tap_text '4. Install / repair environment'
+assert_text 'Install build environment?'
+assert_text 'CONTINUE'
+tap_text 'CANCEL'
 assert_text_scroll 'Grant Termux storage access'
 assert_text_scroll 'Check dependencies now'
 assert_text_scroll 'Copy console'

@@ -28,6 +28,9 @@ See `PRIVACY.md` for the user-facing data-handling statement.
 
 ## Validation status
 
+AppId 0.12.0 (30) is the current submission candidate. The release gate below
+must be run from its final committed source and again from the published tag.
+
 On 2026-08-11, AppId 0.11.1 (29) was validated in Docker with fdroidserver
 2.4.2 (upstream commit `6af4c421`), OpenJDK 21, Gradle 8.11.1, Android platform
 35, and build-tools 35.0.0. `fdroid readmeta`, `fdroid rewritemeta`, and
@@ -51,10 +54,10 @@ Start from a clean `main` branch and prepare the next version with a reviewed,
 plain-text changelog:
 
 ```sh
-./scripts/prepare_fdroid_release.sh 0.12.0 30 /path/to/0.12.0.txt
+./scripts/prepare_fdroid_release.sh 0.12.1 31 /path/to/0.12.1.txt
 git diff --check
 git diff
-git add app/build.gradle fastlane/metadata/android/en-US/changelogs/30.txt
+git add app/build.gradle fastlane/metadata/android/en-US/changelogs/31.txt
 git commit -m "Release AppId 0.12.0"
 ```
 
@@ -66,9 +69,12 @@ unsigned APK twice from clean outputs, and requires identical SHA-256 results:
 ./scripts/verify_fdroid_release.sh
 ```
 
-The verified APK, checksum, and source-provenance record are written to the ignored
-`artifacts/` directory. Tagging rejects an artifact built from a dirty tree or a
-different commit. Preview and then create/publish the annotated tag:
+The verified APK, checksum, source-provenance record, and ready-to-copy
+`artifacts/com.focsd.appid.yml` fdroiddata candidate are written to the ignored
+`artifacts/` directory. The gate rejects both JAR-style signing files and APK
+signing-block signatures in the unsigned candidate. Tagging rejects an artifact
+built from a dirty tree or a different commit. Preview and then create/publish the
+annotated tag:
 
 ```sh
 ./scripts/tag_fdroid_release.sh
@@ -129,9 +135,9 @@ Repo: https://github.com/focsd/appid.git
 Binaries: https://github.com/focsd/appid/releases/download/v%v/AppId-v%v.apk
 
 Builds:
-  - versionName: 0.11.1
-    versionCode: 29
-    commit: 416160d630f1eefe2b153e64ce060b8402ff79b5
+  - versionName: 0.12.0
+    versionCode: 30
+    commit: REPLACE_WITH_THE_FULL_V0.12.0_RELEASE_COMMIT
     subdir: app
     gradle:
       - yes
@@ -140,8 +146,8 @@ AllowedAPKSigningKeys: be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.11.1
-CurrentVersionCode: 29
+CurrentVersion: 0.12.0
+CurrentVersionCode: 30
 ```
 
 Run `fdroid readmeta`, `fdroid rewritemeta com.focsd.appid`,

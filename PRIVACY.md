@@ -10,9 +10,10 @@ usage. This information is processed locally and is not transmitted off the devi
 AppId sends commands to the separately installed Termux application only when the
 user requests an environment setup, dependency check, or placeholder build. Setup
 downloads open-source Termux packages and a checksum-pinned Android platform archive
-from the repositories described in the source code. AppId can ask Android to install
-or uninstall an APK only after an explicit user action; Android displays its normal
-confirmation screen.
+from the repositories described in the source code. Before setup starts, AppId shows
+what Termux may download and requires explicit confirmation. AppId can ask Android
+to install or uninstall an APK only after an explicit user action; Android displays
+its normal confirmation screen.
 
 Build logs and generated APKs are stored locally in AppId's private storage. The
 user can view, copy, or delete them from the app. Optional copies in the shared

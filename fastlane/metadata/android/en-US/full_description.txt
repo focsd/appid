@@ -5,7 +5,7 @@ Choose an installed app, write why you are removing it, and choose what you will
 The separate installed-app viewer can search and sort applications by name, application ID, today's screen time, or occupied storage. Screen-time and storage information is processed locally and is available only after the user explicitly grants Android Usage Access.
 
 Features:
-* Reproducible, checksum-verified Termux environment setup
+* Checksum-verified Android platform setup with explicit download confirmation
 * Live build stages and scrollable Termux console output
 * Generated launcher icons based on each placeholder's first character
 * Local APK library with install, uninstall, and cleanup actions

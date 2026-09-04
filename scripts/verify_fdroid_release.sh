@@ -64,6 +64,8 @@ release_require_tool shellcheck
 release_require_tool unzip
 release_setup_java
 release_setup_android_sdk
+apksigner="$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+[ -x "$apksigner" ] || release_die "apksigner not found: $apksigner"
 
 (
     cd "$work_root"
@@ -82,6 +84,9 @@ apk="$work_root/app/build/outputs/apk/release/app-release-unsigned.apk"
 [ -s "$apk" ] || release_die "unsigned release APK not found: $apk"
 if unzip -Z1 "$apk" | grep -Eq '^META-INF/[^/]+\.(RSA|DSA|EC|SF)$'; then
     release_die 'release APK unexpectedly contains a signing certificate'
+fi
+if "$apksigner" verify "$apk" >/dev/null 2>&1; then
+    release_die 'release APK unexpectedly contains an APK signing-block signature'
 fi
 
 first_apk=$(mktemp "${TMPDIR:-/tmp}/appid-first.apk.XXXXXX")
@@ -104,6 +109,9 @@ artifact_dir="$repo_root/artifacts"
 mkdir -p "$artifact_dir"
 artifact_apk="$artifact_dir/AppId-v$version_name-$version_code-unsigned.apk"
 cp "$apk" "$artifact_apk"
+FDROID_SOURCE_COMMIT=$source_commit \
+    "$work_root/scripts/render_fdroid_metadata.sh" \
+    >"$artifact_dir/com.focsd.appid.yml"
 printf '%s  %s\n' "$second_hash" "$(basename "$artifact_apk")" >"$artifact_apk.sha256"
 printf 'commit=%s\ndirty=%s\nversionName=%s\nversionCode=%s\nsha256=%s\n' \
     "$source_commit" "$source_dirty" "$version_name" "$version_code" "$second_hash" \
@@ -113,5 +121,6 @@ first_apk=
 
 printf 'Release gate passed twice with identical APK bytes.\n'
 printf 'APK: %s\nSHA-256: %s\n' "$artifact_apk" "$second_hash"
+printf 'fdroiddata candidate: %s\n' "$artifact_dir/com.focsd.appid.yml"
 [ "$source_dirty" = false ] \
     || printf 'Note: this artifact records a dirty source tree and cannot be tagged.\n'
