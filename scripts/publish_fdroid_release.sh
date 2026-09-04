@@ -64,10 +64,10 @@ certificate_fingerprint=$(keytool -list -v \
     -keystore "$FOCSD_APPID_KEYSTORE" \
     -alias "$FOCSD_APPID_KEY_ALIAS" \
     -storepass:env FOCSD_APPID_STORE_PASSWORD 2>/dev/null \
-    | awk -F': ' '/^Signature algorithm name:|^SHA256:/{ if ($1 == "SHA256") print $2 }' \
+    | sed -nE 's/^[[:space:]]*SHA-?256:[[:space:]]*//p' \
     | tr -d ':' | tr '[:upper:]' '[:lower:]')
 [ "$certificate_fingerprint" = "$expected_fingerprint" ] \
-    || release_die "keystore certificate fingerprint does not match the configured publisher key"
+    || release_die "keystore certificate fingerprint does not match the configured publisher key (detected: ${certificate_fingerprint:-unavailable})"
 printf 'Certificate fingerprint verified.\n'
 
 git rev-parse --verify --quiet "$tag^{commit}" >/dev/null \
