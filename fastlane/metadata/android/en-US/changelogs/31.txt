@@ -1,0 +1,1 @@
+Aligned the Gradle build runtime with the Java 21 environment used by the pinned F-Droid validation image while retaining Java 17 source and bytecode compatibility. Improved the documented F-Droid publication workflow and release verification.

@@ -28,19 +28,17 @@ See `PRIVACY.md` for the user-facing data-handling statement.
 
 ## Validation status
 
-AppId 0.12.0 (30) is the current submission candidate. The release gate below
+AppId 0.12.1 (31) is the current submission candidate. The release gate below
 must be run from its final committed source and again from the published tag.
 
 ### Publication progress — 2026-09-04
 
-- [x] Release commit `7c6a6bb4e8e1bf2cf2cf3379038d5243ffac31ec` is on `main`.
-- [x] Annotated tag `v0.12.0` is published on `origin` at that commit.
-- [x] Local tag gate passed: tests, debug/release lint, script checks, unsigned
-  APK checks, and two identical builds.
-- [x] Local unsigned APK SHA-256: `6477ae9c48feb90f841c9461dc9f0966f4df9baf1ec3c77771c27c7b89c7effc`.
-- [ ] Docker/fdroidserver gate: currently blocked because the pinned Debian
-  image provides OpenJDK 21, while the tagged Gradle configuration requires a
-  Java 17 runtime.
+- [x] `v0.12.0` remains published unchanged.
+- [x] Removed the optional Gradle daemon JVM pin so local Java 17 and the
+  F-Droid image's Java 21 can both run the build.
+- [x] `0.12.1` / version code `31` is prepared with a changelog.
+- [x] Local release gate and debug Android checks pass.
+- [ ] Docker/fdroidserver gate for `v0.12.1`.
 - [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
   passes against the exact public tag.
 
@@ -71,7 +69,7 @@ plain-text changelog:
 git diff --check
 git diff
 git add app/build.gradle fastlane/metadata/android/en-US/changelogs/31.txt
-git commit -m "Release AppId 0.12.0"
+git commit -m "Release AppId 0.12.1"
 ```
 
 Run the complete gate. It checks script parity and syntax, runs ShellCheck, unit
@@ -100,9 +98,9 @@ After publishing, repeat the gate from the exact public tag rather than the work
 tree:
 
 ```sh
-git fetch origin tag v0.12.0
-./scripts/verify_fdroid_release.sh --ref v0.12.0
-./scripts/verify_fdroid_docker.sh --ref v0.12.0
+git fetch origin tag v0.12.1
+./scripts/verify_fdroid_release.sh --ref v0.12.1
+./scripts/verify_fdroid_docker.sh --ref v0.12.1
 ```
 
 The Docker gate builds a reusable image from the SHA-256-pinned official F-Droid
@@ -113,7 +111,7 @@ equal the locally double-built APK hash. Use `--rebuild-image` when deliberately
 refreshing the derived environment; `FDROID_RELEASE_IMAGE` can select a reviewed
 replacement image.
 
-The `AutoUpdateMode: Version` configuration lets F-Droid detect the new `v0.12.0`
+The `AutoUpdateMode: Version` configuration lets F-Droid detect the new `v0.12.1`
 tag. If maintainers request a manual metadata update, render a schema-correct full
 file or just the new build/current-version block with:
 
@@ -148,9 +146,9 @@ Repo: https://github.com/focsd/appid.git
 Binaries: https://github.com/focsd/appid/releases/download/v%v/AppId-v%v.apk
 
 Builds:
-  - versionName: 0.12.0
-    versionCode: 30
-    commit: REPLACE_WITH_THE_FULL_V0.12.0_RELEASE_COMMIT
+  - versionName: 0.12.1
+    versionCode: 31
+    commit: REPLACE_WITH_THE_FULL_V0.12.1_RELEASE_COMMIT
     subdir: app
     gradle:
       - yes
@@ -159,8 +157,8 @@ AllowedAPKSigningKeys: be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.12.0
-CurrentVersionCode: 30
+CurrentVersion: 0.12.1
+CurrentVersionCode: 31
 ```
 
 Run `fdroid readmeta`, `fdroid rewritemeta com.focsd.appid`,
