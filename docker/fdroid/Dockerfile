@@ -12,7 +12,7 @@ ENV ANDROID_SDK_ROOT=/opt/android-sdk
 # replace its unmanaged curl binary with Debian's matching OpenSSL build.
 RUN apt-get update \
     && apt-get install --reinstall -y --no-install-recommends libexpat1 libpython3.13-stdlib \
-    && apt-get install -y --no-install-recommends curl fdroidserver git gradle rsync shellcheck unzip \
+    && apt-get install -y --no-install-recommends curl fdroidserver git gradle openjdk-17-jdk-headless rsync shellcheck unzip \
     && apt-get install --reinstall -y --no-install-recommends libcurl4t64 \
     && rm -rf /var/lib/apt/lists/*
 
