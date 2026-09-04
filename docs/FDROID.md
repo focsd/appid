@@ -40,9 +40,10 @@ must be run from its final committed source and again from the published tag.
 - [x] Local release gate and debug Android checks pass.
 - [x] Docker/fdroidserver built the public `v0.12.1` source successfully and
   passed source scanning, metadata checks, and the unsigned APK build.
+- [x] Confirm the new publisher certificate fingerprint and update the
+  fdroiddata metadata generator.
 - [ ] Upload the publisher-signed GitHub asset `AppId-v0.12.1.apk`; this needs
-  the protected FOCSD signing keystore and passwords, which are not present in
-  the release environment.
+  the protected FOCSD signing keystore and passwords.
 - [ ] Complete Docker binary comparison after the signed asset is uploaded.
 - [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
   passes against the exact public tag.
@@ -158,7 +159,7 @@ Builds:
     gradle:
       - yes
 
-AllowedAPKSigningKeys: be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a286dbbc
+AllowedAPKSigningKeys: 8c54543c74d42f5cc96b24027c30d89f7e38f8595f4056c8976b253fdfa603a8
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

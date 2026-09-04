@@ -18,8 +18,8 @@ common signing-file extensions, but secrets should still live in a password mana
 or CI secret store. Back up the release key securely: losing it prevents normal
 updates to an already distributed application.
 
-The permanent AppId publisher certificate SHA-256 is
-`be1a53e94b9ccc0dbea1e4343aacf34169de1c14ccd77037d8783029a286dbbc`.
+The current AppId publisher certificate SHA-256 is
+`8c54543c74d42f5cc96b24027c30d89f7e38f8595f4056c8976b253fdfa603a8`.
 Publisher APK assets must be named `AppId-v<versionName>.apk`; this stable naming is
 used by fdroiddata's `Binaries` URL for reproducible-build verification. Never
 replace a published APK with a build signed by another key.
