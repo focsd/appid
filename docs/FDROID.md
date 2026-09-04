@@ -139,6 +139,10 @@ the signed asset inside the pinned Java 21 Docker image; creates or updates the
 GitHub release; runs the exact-tag Docker comparison; and writes the fdroiddata
 candidate. It never stores credentials in the repository.
 
+The Docker comparison is authoritative for the published artifact. The local
+unsigned build is still checked twice, but it is not byte-compared with Docker
+because the host may use a different JDK compiler version.
+
 Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK;
 publisher signing secrets must never be added to either repository.
 

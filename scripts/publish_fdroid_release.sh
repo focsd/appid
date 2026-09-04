@@ -56,6 +56,7 @@ export FOCSD_APPID_KEY_PASSWORD
 
 cleanup() {
     [ -z "${secret_env:-}" ] || rm -f "$secret_env"
+    [ -z "${local_properties:-}" ] || rm -f "$local_properties"
     unset FOCSD_APPID_KEYSTORE FOCSD_APPID_KEY_ALIAS \
         FOCSD_APPID_STORE_PASSWORD FOCSD_APPID_KEY_PASSWORD
 }
@@ -90,6 +91,8 @@ fi
 
 umask 077
 secret_env=$(mktemp "${TMPDIR:-/tmp}/appid-publisher-env.XXXXXX")
+local_properties=$(mktemp "${TMPDIR:-/tmp}/appid-publisher-local-properties.XXXXXX")
+printf 'sdk.dir=/opt/android-sdk\n' >"$local_properties"
 printf 'FOCSD_APPID_KEYSTORE=/run/secrets/appid-release.jks\n' >"$secret_env"
 {
     printf 'FOCSD_APPID_KEY_ALIAS=%s\n' "$FOCSD_APPID_KEY_ALIAS"
@@ -99,8 +102,10 @@ printf 'FOCSD_APPID_KEYSTORE=/run/secrets/appid-release.jks\n' >"$secret_env"
 
 docker run --rm --platform linux/amd64 \
     --volume "$repo_root:/workspace" \
+    --volume "$local_properties:/workspace/local.properties:ro" \
     --volume "$keystore:/run/secrets/appid-release.jks:ro" \
     --env-file "$secret_env" \
+    --env GRADLE_OPTS=-Dorg.gradle.vfs.watch=false \
     --workdir /workspace \
     "$fdroid_image" \
     /bin/bash -c 'set -euo pipefail
