@@ -126,6 +126,19 @@ file or just the new build/current-version block with:
 ./scripts/render_fdroid_metadata.sh --build-block
 ```
 
+For an interactive end-to-end publisher run, use the guarded script after placing
+the production keystore at its secure location:
+
+```sh
+./scripts/publish_fdroid_release.sh
+```
+
+It prompts for the keystore path, alias, and passwords without accepting passwords
+as command-line arguments; verifies the configured publisher certificate; builds
+the signed asset; creates or updates the GitHub release; runs the exact-tag Docker
+comparison; and writes the fdroiddata candidate. It never stores credentials in
+the repository.
+
 Do not tag a dirty tree. F-Droid checks out the tag and signs its own rebuilt APK;
 publisher signing secrets must never be added to either repository.
 
