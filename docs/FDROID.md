@@ -38,7 +38,12 @@ must be run from its final committed source and again from the published tag.
   F-Droid image's Java 21 can both run the build.
 - [x] `0.12.1` / version code `31` is prepared with a changelog.
 - [x] Local release gate and debug Android checks pass.
-- [ ] Docker/fdroidserver gate for `v0.12.1`.
+- [x] Docker/fdroidserver built the public `v0.12.1` source successfully and
+  passed source scanning, metadata checks, and the unsigned APK build.
+- [ ] Upload the publisher-signed GitHub asset `AppId-v0.12.1.apk`; this needs
+  the protected FOCSD signing keystore and passwords, which are not present in
+  the release environment.
+- [ ] Complete Docker binary comparison after the signed asset is uploaded.
 - [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
   passes against the exact public tag.
 
