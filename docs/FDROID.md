@@ -31,6 +31,19 @@ See `PRIVACY.md` for the user-facing data-handling statement.
 AppId 0.12.0 (30) is the current submission candidate. The release gate below
 must be run from its final committed source and again from the published tag.
 
+### Publication progress — 2026-09-04
+
+- [x] Release commit `7c6a6bb4e8e1bf2cf2cf3379038d5243ffac31ec` is on `main`.
+- [x] Annotated tag `v0.12.0` is published on `origin` at that commit.
+- [x] Local tag gate passed: tests, debug/release lint, script checks, unsigned
+  APK checks, and two identical builds.
+- [x] Local unsigned APK SHA-256: `6477ae9c48feb90f841c9461dc9f0966f4df9baf1ec3c77771c27c7b89c7effc`.
+- [ ] Docker/fdroidserver gate: currently blocked because the pinned Debian
+  image provides OpenJDK 21, while the tagged Gradle configuration requires a
+  Java 17 runtime.
+- [ ] Submit `metadata/com.focsd.appid.yml` to fdroiddata after the Docker gate
+  passes against the exact public tag.
+
 On 2026-08-11, AppId 0.11.1 (29) was validated in Docker with fdroidserver
 2.4.2 (upstream commit `6af4c421`), OpenJDK 21, Gradle 8.11.1, Android platform
 35, and build-tools 35.0.0. `fdroid readmeta`, `fdroid rewritemeta`, and
