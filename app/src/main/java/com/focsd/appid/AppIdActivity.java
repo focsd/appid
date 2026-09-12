@@ -1227,6 +1227,20 @@ abstract class AppIdActivity extends Activity {
     }
 
     private void openUnknownSourcesSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            try {
+                startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+                return;
+            } catch (Exception ignored) {
+                openOwnAppSettings();
+                return;
+            }
+        }
+        openPerAppUnknownSourcesSettings();
+    }
+
+    @SuppressLint("InlinedApi")
+    private void openPerAppUnknownSourcesSettings() {
         try {
             Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                     Uri.parse("package:" + getPackageName()));
@@ -1234,9 +1248,7 @@ abstract class AppIdActivity extends Activity {
             return;
         } catch (Exception ignored) {
         }
-        Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + getPackageName()));
-        startActivity(i);
+        openOwnAppSettings();
     }
 
     private boolean isPackageInstalled(String packageName) {

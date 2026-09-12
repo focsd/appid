@@ -1,5 +1,6 @@
 package com.focsd.appid;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
@@ -170,25 +171,31 @@ public final class BuiltApksActivity extends Activity {
     }
 
     private void install(BuiltApkStore.Record record) {
-        if (!getPackageManager().canRequestPackageInstalls()) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Allow AppId to install APKs")
-                    .setMessage("Grant the one-time Install unknown apps permission, then tap this APK again.")
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Open settings", (dialog, which) -> {
-                        try {
-                            startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                    Uri.parse("package:" + getPackageName())));
-                        } catch (Exception error) {
-                            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.parse("package:" + getPackageName())));
-                        }
-                    })
-                    .show();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getPackageManager().canRequestPackageInstalls()) {
+            showUnknownSourcesPermission();
             return;
         }
         String error = ApkInstaller.open(this, record.file);
         if (error != null) toast(error);
+    }
+
+    @SuppressLint("InlinedApi")
+    private void showUnknownSourcesPermission() {
+        new AlertDialog.Builder(this)
+                .setTitle("Allow AppId to install APKs")
+                .setMessage("Grant the one-time Install unknown apps permission, then tap this APK again.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Open settings", (dialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:" + getPackageName())));
+                    } catch (Exception error) {
+                        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + getPackageName())));
+                    }
+                })
+                .show();
     }
 
     private void confirmDelete(BuiltApkStore.Record record) {

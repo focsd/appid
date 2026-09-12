@@ -25,6 +25,13 @@ Publisher-signed builds additionally require environment-backed signing
 credentials; unsigned F-Droid release builds do not. See
 [RELEASING.md](RELEASING.md).
 
+## Runtime compatibility
+
+AppId supports Android 7.0 (API 24) and newer. Android 7 uses the legacy
+launcher resource and the system-wide unknown-source setting. Screen-time
+statistics remain available there after Usage Access is granted, while occupied
+storage statistics require Android 8.0 (API 26) or newer.
+
 ## Changes in version 0.11.0
 
 The source tree is prepared for F-Droid: `assembleRelease` produces the unsigned APK
@@ -219,6 +226,11 @@ Version 0.11.0 subsequently passed unit tests, debug and release lint, debug and
 unsigned-release assembly entirely offline. Two clean unsigned release builds were
 byte-identical. The device disconnected before the optional 0.11.0 smoke install;
 this does not affect the completed host release checks.
+
+On 2026-09-12, the API 24 compatibility change passed unit tests, debug and
+release lint, and debug and unsigned-release assembly. The debug APK was then
+installed and cold-launched successfully on an `AGS_L09` device running API 24;
+Android reported `minSdk=24`, `targetSdk=35`, and launch status `ok`.
 
 ## App first-run requirements
 

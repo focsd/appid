@@ -10,6 +10,11 @@ Issues: [github.com/focsd/appid/issues](https://github.com/focsd/appid/issues)
 
 Android application ID: `com.focsd.appid`
 
+Android compatibility: Android 7.0 (API 24) or newer. Occupied-storage
+statistics and per-app unknown-source settings use Android 8.0 features; on
+Android 7, AppId keeps screen-time support and opens the system-wide Security
+settings when installation permission must be changed.
+
 License: [MIT](LICENSE)
 
 Privacy: [AppId does not collect or transmit personal data](PRIVACY.md)

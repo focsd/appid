@@ -1,5 +1,6 @@
 package com.focsd.appid;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AppOpsManager;
 import android.app.usage.UsageStats;
@@ -115,7 +116,8 @@ public final class AppViewerActivity extends Activity {
         usageStatus = text("", 13f);
         usageStatus.setPadding(0, dp(5), 0, dp(3));
         header.addView(usageStatus);
-        Button usageAccess = button("Grant usage and storage access");
+        Button usageAccess = button(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? "Grant usage and storage access" : "Grant usage access");
         usageAccess.setOnClickListener(v -> openUsageAccessSettings());
         header.addView(usageAccess, matchWrap());
 
@@ -173,7 +175,9 @@ public final class AppViewerActivity extends Activity {
                         AppInventoryAdapter.SORT_STORAGE
                 };
                 adapter.setSortMode(sortModes[Math.min(position, sortModes.length - 1)]);
-                if (position >= 2 && !hasUsageAccess()) {
+                if (position == 3 && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                    toast("Occupied-space sorting requires Android 8 or newer");
+                } else if (position >= 2 && !hasUsageAccess()) {
                     toast("Grant Usage access to populate this sort");
                 }
                 updateCount();
@@ -205,7 +209,9 @@ public final class AppViewerActivity extends Activity {
         if (loadTask != null) loadTask.cancel(true);
         progressBar.setVisibility(View.VISIBLE);
         countText.setText(usageAllowed
-                ? "Reading installed apps, usage and storage…"
+                ? (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                        ? "Reading installed apps, usage and storage…"
+                        : "Reading installed apps and usage…")
                 : "Loading installed apps…");
         loadTask = executor.submit(() -> {
             PackageManager packageManager = getPackageManager();
@@ -218,7 +224,6 @@ public final class AppViewerActivity extends Activity {
             }
 
             Map<String, UsageStats> usage = Collections.emptyMap();
-            StorageStatsManager storageManager = null;
             if (usageAllowed) {
                 UsageStatsManager manager = (UsageStatsManager)
                         getSystemService(Context.USAGE_STATS_SERVICE);
@@ -233,8 +238,6 @@ public final class AppViewerActivity extends Activity {
                     if (result != null) usage = result;
                 } catch (RuntimeException ignored) {
                 }
-                storageManager = (StorageStatsManager)
-                        getSystemService(Context.STORAGE_STATS_SERVICE);
             }
 
             List<AppInventoryEntry> apps = new ArrayList<>();
@@ -255,18 +258,11 @@ public final class AppViewerActivity extends Activity {
                     long foreground = appUsage == null ? 0L : appUsage.getTotalTimeInForeground();
                     long occupiedBytes = 0L;
                     boolean storageAvailable = false;
-                    if (storageManager != null) {
-                        try {
-                            StorageStats stats = storageManager.queryStatsForPackage(
-                                    info.storageUuid == null
-                                            ? StorageManager.UUID_DEFAULT : info.storageUuid,
-                                    info.packageName,
-                                    UserHandle.getUserHandleForUid(info.uid));
-                            occupiedBytes = AppValueFormatter.safeAdd(
-                                    stats.getAppBytes(), stats.getDataBytes());
+                    if (usageAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        long measuredBytes = Api26Storage.queryOccupiedBytes(this, info);
+                        if (measuredBytes >= 0L) {
+                            occupiedBytes = measuredBytes;
                             storageAvailable = true;
-                        } catch (Exception ignored) {
-                            // A package or storage volume may disappear during the scan.
                         }
                     }
                     apps.add(new AppInventoryEntry(
@@ -282,7 +278,9 @@ public final class AppViewerActivity extends Activity {
                     int completed = processed;
                     runOnUiThread(() -> {
                         if (generation == loadGeneration && !isFinishing() && !isDestroyed()) {
-                            countText.setText("Reading usage and storage: " + completed + "/" +
+                            String details = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                                    ? "usage and storage" : "usage";
+                            countText.setText("Reading " + details + ": " + completed + "/" +
                                     installed.size());
                         }
                     });
@@ -322,9 +320,38 @@ public final class AppViewerActivity extends Activity {
     }
 
     private void updateUsageStatus() {
-        usageStatus.setText(hasUsageAccess()
-                ? "Today’s screen time and occupied storage are available."
-                : "Screen time and storage require Android Usage access.");
+        if (!hasUsageAccess()) {
+            usageStatus.setText(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? "Screen time and storage require Android Usage access."
+                    : "Screen time requires Android Usage access. Storage size requires Android 8 or newer.");
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            usageStatus.setText("Today’s screen time and occupied storage are available.");
+        } else {
+            usageStatus.setText("Today’s screen time is available. Storage size requires Android 8 or newer.");
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private static final class Api26Storage {
+        private Api26Storage() {
+        }
+
+        static long queryOccupiedBytes(Context context, ApplicationInfo info) {
+            StorageStatsManager manager = (StorageStatsManager)
+                    context.getSystemService(Context.STORAGE_STATS_SERVICE);
+            if (manager == null) return -1L;
+            try {
+                StorageStats stats = manager.queryStatsForPackage(
+                        info.storageUuid == null
+                                ? StorageManager.UUID_DEFAULT : info.storageUuid,
+                        info.packageName,
+                        UserHandle.getUserHandleForUid(info.uid));
+                return AppValueFormatter.safeAdd(stats.getAppBytes(), stats.getDataBytes());
+            } catch (Exception ignored) {
+                // A package or storage volume may disappear during the scan.
+                return -1L;
+            }
+        }
     }
 
     private void openUsageAccessSettings() {
