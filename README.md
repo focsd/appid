@@ -15,7 +15,12 @@ statistics and per-app unknown-source settings use Android 8.0 features; on
 Android 7, AppId keeps screen-time support and opens the system-wide Security
 settings when installation permission must be changed.
 
-License: [MIT](LICENSE)
+## License
+
+This project is licensed under the Mozilla Public License 2.0.
+You may use, modify, and distribute this software, including
+commercially, subject to the terms of the MPL-2.0.
+See [LICENSE](LICENSE) for details.
 
 Privacy: [AppId does not collect or transmit personal data](PRIVACY.md)
 

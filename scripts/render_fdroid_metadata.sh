@@ -30,7 +30,7 @@ if [ "$mode" = full ]; then
     cat <<EOF
 Categories:
   - Development
-License: MIT
+License: MPL-2.0
 AuthorName: FOCSD
 AuthorWebSite: https://focsd.com
 WebSite: https://focsd.com
