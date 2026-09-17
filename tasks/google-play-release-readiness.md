@@ -16,7 +16,8 @@ Task created from the release-preparation patterns used by `android-switchlog`,
 - [x] Add an explicit Play permission-rationale draft for package visibility,
       Usage Access, APK installation, uninstall confirmation, and Termux commands.
 - [ ] Complete Play Console Data Safety, App access, content rating, target audience,
-      account deletion, and permissions declarations.
+      account deletion, and permissions declarations using the expanded drafts in
+      `docs/PLAY_STORE.md`.
 - [ ] Verify that the listing, privacy policy, in-app notices, and uploaded artifact
       describe the same behavior.
 
@@ -24,8 +25,10 @@ Task created from the release-preparation patterns used by `android-switchlog`,
 
 - [x] Validate the 512×512 Play icon as a full-square, opaque, sRGB PNG without a
       baked Play mask or shadow.
-- [x] Validate the 1024×500 feature graphic.
-- [ ] Capture current light and dark phone screenshots on API 34+.
+- [x] Validate the 1024×500 feature graphic and refresh its embedded mark to match
+      the current launcher icon.
+- [x] Capture and visually verify current light and dark phone screenshots on API
+      34 (`22126RN91Y`); assets are under `fastlane/metadata/android/en-US/images/`.
 - [ ] Capture tablet screenshots or explicitly decide not to distribute to tablets.
 - [x] Prepare short description, full description, reviewer notes, and release notes.
 
@@ -45,6 +48,10 @@ Task created from the release-preparation patterns used by `android-switchlog`,
 - [x] Run `./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug bundleRelease`.
 - [x] Run `git diff --check` and the Termux parity checker after asset changes.
 - [ ] Test the signed release on API 24 and API 35/36 devices.
+- [x] Smoke-test the debug release candidate on API 34 first and API 33 with
+      Termux; main, About, Privacy, License, Setup, APK library, and Installed apps
+      flows passed. API 34's no-Termux run also verified the documented optional
+      integration path and skipped only Termux-dependent controls.
 - [ ] Check light/dark mode, large fonts, TalkBack labels, rotation, edge-to-edge,
       keyboard behavior, and all destructive confirmations.
 - [ ] Test Termux setup, environment audit, placeholder build, APK install, and

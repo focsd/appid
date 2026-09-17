@@ -58,6 +58,12 @@ inspect the reason/action form. To inspect generated APK management, open
 **APK library**. To inspect privacy and licensing information, open the top-right
 menu and select **Privacy policy** or **License**.
 
+App access declaration: AppId has no login, account, subscription, age gate, or
+restricted reviewer content. Every screen is available immediately after
+installation. Termux is an optional, separately installed companion used only
+when the reviewer wants to test environment setup or APK generation; the main
+installed-app inventory and replacement form remain usable without it.
+
 ## Data Safety draft
 
 - Data collected by AppId: **None**
@@ -74,19 +80,35 @@ the final uploaded artifact and Play Console form.
 
 ## Permission declarations
 
-- `QUERY_ALL_PACKAGES`: core functionality is the user-requested installed-app
-  and application-ID inventory. The declaration must explain why a narrower
-  package-query list cannot support this feature.
-- `PACKAGE_USAGE_STATS`: optional, user-granted access used only to show local
-  screen-time and occupied-storage information in Installed apps.
-- `REQUEST_INSTALL_PACKAGES`: core functionality is installing a generated
-  placeholder APK through Android's user-confirmed package installer. Confirm
-  eligibility under the current Play restricted-permission policy before upload;
-  the Play Console owner must make the final declaration.
-- `REQUEST_DELETE_PACKAGES`: used only to open Android's user-confirmed
-  uninstall flow for a generated placeholder.
-- `com.termux.permission.RUN_COMMAND`: used only to send explicit user-requested
-  setup/check/build commands to the separately installed Termux app.
+- `QUERY_ALL_PACKAGES` — core inventory functionality. After the user opens
+  Installed apps, AppId reads the installed package list so the user can choose
+  the app to replace and see its application ID. The inventory is not uploaded
+  or used for advertising. A narrow package-query declaration cannot support
+  this user-selected “show any installed app” workflow because the target is
+  not known in advance. Complete the Play Console package-visibility declaration
+  with this user-facing purpose and confirm that the selected policy category
+  permits it.
+- `PACKAGE_USAGE_STATS` — optional local diagnostics. Only after the user grants
+  Usage Access, AppId reads Android's locally available screen-time and occupied
+  storage values for the Installed apps view. The values help the user compare
+  habits and storage impact; they are not needed to create a placeholder and
+  never leave the device. Explain that the user can deny this access and retain
+  all core replacement features.
+- `REQUEST_INSTALL_PACKAGES` — user-selected placeholder installation. When the
+  user taps install for an APK that AppId generated, AppId starts Android's
+  package-installer confirmation flow. AppId does not silently install packages,
+  install third-party downloads, or install in the background. Confirm current
+  Google Play eligibility for this restricted permission before declaring it.
+- `REQUEST_DELETE_PACKAGES` — user-selected cleanup. When the user chooses to
+  remove a generated placeholder from APK library or Installed apps, AppId starts
+  Android's uninstall confirmation flow. It does not silently remove apps or
+  delete the original app that the user is replacing.
+- `com.termux.permission.RUN_COMMAND` — optional build integration. When the
+  user presses a setup, dependency-check, or build action, AppId sends that
+  explicit command to the separately installed Termux app. Termux performs the
+  build locally and AppId shows the returned status/log; AppId cannot execute
+  commands without the user's action and the Termux permission. Denying it
+  leaves the non-Termux screens available.
 
 These permissions do not mean AppId collects the associated information. The
 Data Safety answers describe data leaving the device, while the permission
@@ -96,7 +118,9 @@ declarations explain why Android access is needed.
 
 - 512×512 icon: `fastlane/metadata/android/en-US/images/icon.png`
 - 1024×500 feature graphic: `fastlane/metadata/android/en-US/images/featureGraphic.png`
-- Phone screenshots: `fastlane/metadata/android/en-US/images/phoneScreenshots/`
+- Phone screenshots (API 34, light and dark):
+  `fastlane/metadata/android/en-US/images/phoneScreenshots/`
+  (`1-home.png`, `2-setup.png`, `3-home-dark.png`, `4-setup-dark.png`)
 
 Capture fresh screenshots from the release candidate, including light and dark
 mode, before upload. Test or explicitly restrict tablet distribution.
