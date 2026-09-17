@@ -1,7 +1,6 @@
 package com.focsd.appid;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -27,13 +26,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public final class BuiltApksActivity extends Activity {
+public final class BuiltApksActivity extends AppCompatActivity {
     private final List<BuiltApkStore.Record> records = new ArrayList<>();
     private BuiltApkAdapter adapter;
     private TextView countText;
@@ -42,7 +43,7 @@ public final class BuiltApksActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTitle("Built APKs");
-        if (getActionBar() != null) getActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setContentView(buildUi());
     }
 

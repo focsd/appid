@@ -15,6 +15,10 @@ statistics and per-app unknown-source settings use Android 8.0 features; on
 Android 7, AppId keeps screen-time support and opens the system-wide Security
 settings when installation permission must be changed.
 
+The current Play build targets Android 16 (API 36), uses Material Components
+and AppCompat for the application shell, and keeps generated placeholder APKs
+small and framework-only.
+
 ## License
 
 This project is licensed under the Mozilla Public License 2.0.
@@ -22,7 +26,12 @@ You may use, modify, and distribute this software, including
 commercially, subject to the terms of the MPL-2.0.
 See [LICENSE](LICENSE) for details.
 
-Privacy: [AppId does not collect or transmit personal data](PRIVACY.md)
+Privacy: [AppId does not collect or transmit personal data](PRIVACY.md) and
+[host-ready HTML policy](docs/privacy-policy.html)
+
+Third-party notices: [AndroidX and Material Components](docs/THIRD_PARTY_NOTICES.md)
+
+Google Play packaging: [submission packet](docs/PLAY_STORE.md)
 
 F-Droid packaging: [release and submission guide](docs/FDROID.md)
 

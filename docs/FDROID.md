@@ -1,9 +1,9 @@
 # F-Droid release and submission
 
 AppId is structured for the official F-Droid build service. The production APK uses
-only Android framework APIs, contains no tracking or advertising SDK, and has no
-Internet permission. The project is MPL-2.0-licensed. Store copy and changelogs live in
-`fastlane/metadata/android/en-US/`.
+free/open-source AndroidX and Material Components libraries, contains no tracking or
+advertising SDK, and has no Internet permission. The project is MPL-2.0-licensed.
+Store copy and changelogs live in `fastlane/metadata/android/en-US/`.
 
 ## Permission and policy notes
 

@@ -86,12 +86,26 @@ adb_cmd shell wm dismiss-keyguard 2>/dev/null || true
 adb_cmd shell am force-stop "$PACKAGE"
 adb_cmd shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 1
+adb_cmd shell input swipe 540 500 540 1800 300
+sleep 0.4
 assert_text 'CREATE'
-assert_any_text '✓ Builder ready' 'Setup required • Open Setup & tools from the menu'
+if ! has_text '✓ Builder ready' && ! has_text 'Setup required • Open Setup & tools from the menu'; then
+    assert_text_scroll 'Setup required • Open Setup & tools from the menu'
+fi
 tap_description 'More options'
 tap_text 'About'
 assert_text 'About AppId'
 tap_text 'OK'
+adb_cmd shell input keyevent KEYCODE_MENU
+sleep 0.4
+tap_text 'Privacy policy'
+assert_text 'Privacy policy'
+tap_text 'CLOSE'
+adb_cmd shell input keyevent KEYCODE_MENU
+sleep 0.4
+tap_text 'License'
+assert_text 'License'
+tap_text 'CLOSE'
 adb_cmd shell am force-stop "$PACKAGE"
 adb_cmd shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 1
@@ -101,9 +115,14 @@ assert_text '1. Copy first-run Termux command'
 assert_text '2. Open Termux'
 assert_any_text '3. Grant AppId Termux permission' '3. Check Termux compatibility'
 tap_text '4. Install / repair environment'
-assert_text 'Install build environment?'
-assert_text 'CONTINUE'
-tap_text 'CANCEL'
+if has_text 'Install Termux to continue'; then
+    assert_text 'Install Termux to continue'
+    tap_text 'CLOSE'
+else
+    assert_text 'Install build environment?'
+    assert_text 'CONTINUE'
+    tap_text 'CANCEL'
+fi
 assert_text_scroll 'Grant Termux storage access'
 assert_text_scroll 'Check dependencies now'
 assert_text_scroll 'Copy console'

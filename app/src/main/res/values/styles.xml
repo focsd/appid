@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-        AppId builds against a framework resource set that does not expose
-        Theme.Material.DayNight by name. The matching values-night resource
-        below supplies the dark variant while this compatible parent preserves
-        normal Android action-bar and dialog behavior on older devices.
-    -->
-    <style name="AppIdTheme" parent="android:style/Theme.Material.Light.DarkActionBar">
+    <style name="AppIdTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowBackground">#FAFAFC</item>
@@ -17,5 +11,11 @@
         <item name="android:statusBarColor">#172238</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:navigationBarColor">#172238</item>
+        <item name="colorPrimary">@color/app_primary</item>
+        <item name="colorPrimaryVariant">@color/app_primary_variant</item>
+        <item name="colorOnPrimary">@color/app_on_primary</item>
+        <item name="colorSecondary">@color/app_secondary</item>
+        <item name="colorSurface">@color/app_surface</item>
+        <item name="colorOnSurface">@color/app_on_surface</item>
     </style>
 </resources>

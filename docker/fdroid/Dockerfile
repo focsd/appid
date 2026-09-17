@@ -22,8 +22,10 @@ RUN test "$(fdroid --version)" = '2.4.2' \
 
 RUN yes | sdkmanager --licenses --sdk_root="$ANDROID_SDK_ROOT" >/dev/null 2>&1 || true; \
     sdkmanager --install --sdk_root="$ANDROID_SDK_ROOT" \
-        'platforms;android-35' 'build-tools;35.0.0'; \
+        'platforms;android-35' 'build-tools;35.0.0' \
+        'platforms;android-36' 'build-tools;36.1.0'; \
     test -s "$ANDROID_SDK_ROOT/platforms/android-35/android.jar"; \
-    test -x "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2"
+    test -s "$ANDROID_SDK_ROOT/platforms/android-36/android.jar"; \
+    test -x "$ANDROID_SDK_ROOT/build-tools/36.1.0/aapt2"
 
 WORKDIR /build

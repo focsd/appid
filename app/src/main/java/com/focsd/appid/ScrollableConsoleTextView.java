@@ -1,10 +1,11 @@
 package com.focsd.appid;
 
 import android.content.Context;
-import android.widget.TextView;
+
+import androidx.appcompat.widget.AppCompatTextView;
 
 /** Text console that exposes touch clicks correctly to accessibility services. */
-final class ScrollableConsoleTextView extends TextView {
+final class ScrollableConsoleTextView extends AppCompatTextView {
     ScrollableConsoleTextView(Context context) {
         super(context);
     }

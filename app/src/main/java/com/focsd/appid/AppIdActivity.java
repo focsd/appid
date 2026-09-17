@@ -1,7 +1,6 @@
 package com.focsd.appid;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.ClipData;
@@ -49,6 +48,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.button.MaterialButton;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -63,7 +66,7 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-abstract class AppIdActivity extends Activity {
+abstract class AppIdActivity extends AppCompatActivity {
 
     private static final String TERMUX_PACKAGE = "com.termux";
     private static final String TERMUX_SERVICE = "com.termux.app.RunCommandService";
@@ -93,6 +96,8 @@ abstract class AppIdActivity extends Activity {
     private static final int MENU_APK_LIBRARY = 2;
     private static final int MENU_INSTALLED_APPS = 3;
     private static final int MENU_ABOUT = 4;
+    private static final int MENU_PRIVACY = 5;
+    private static final int MENU_LICENSE = 6;
     private static final int REQUEST_PLATFORM_SOURCE = 4201;
     private static final String PREFS = "appid.preferences";
     private static final String PREF_PLATFORM_SOURCE_NAME = "platform_source_name";
@@ -153,6 +158,8 @@ abstract class AppIdActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         registerProgressReceiver();
         if (!UiStateRules.shouldInitializeCreator(isSetupDestination())) {
             showingSetup = true;
@@ -503,7 +510,7 @@ abstract class AppIdActivity extends Activity {
     private void showCreatorView() {
         showingSetup = false;
         setTitle("AppId");
-        if (getActionBar() != null) getActionBar().setDisplayHomeAsUpEnabled(false);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         setContentView(creatorView);
         invalidateOptionsMenu();
         refreshStatus();
@@ -513,7 +520,7 @@ abstract class AppIdActivity extends Activity {
     private void showSetupView() {
         showingSetup = true;
         setTitle("Setup & tools");
-        if (getActionBar() != null) getActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setContentView(setupView);
         invalidateOptionsMenu();
         refreshStatus();
@@ -1368,6 +1375,10 @@ abstract class AppIdActivity extends Activity {
                 .setIcon(R.drawable.ic_apps);
         menu.add(0, MENU_ABOUT, 3, "About")
                 .setIcon(R.drawable.ic_info);
+        menu.add(0, MENU_PRIVACY, 4, "Privacy policy")
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        menu.add(0, MENU_LICENSE, 5, "License")
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         return true;
     }
 
@@ -1393,6 +1404,14 @@ abstract class AppIdActivity extends Activity {
             showAbout();
             return true;
         }
+        if (item.getItemId() == MENU_PRIVACY) {
+            showPrivacyPolicy();
+            return true;
+        }
+        if (item.getItemId() == MENU_LICENSE) {
+            showLicense();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -1414,6 +1433,46 @@ abstract class AppIdActivity extends Activity {
                     }
                 })
                 .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private void showPrivacyPolicy() {
+        showDocument("Privacy policy",
+                "Effective date: September 17, 2026\n\n" +
+                "AppId does not collect, transmit, sell, or share personal data.\n\n" +
+                "AppId can read the installed-application inventory to let you choose an app to replace. If you explicitly grant Android Usage Access, it can display device-reported screen-time and storage information. This information is processed locally and is not sent to the developer or any third party.\n\n" +
+                "Build logs, generated APKs, preferences, and imported Android platform sources are stored locally. Optional copies in shared Downloads remain under your control.\n\n" +
+                "When you explicitly request setup, dependency checking, or a placeholder build, AppId sends a command to the separately installed Termux application. Termux may download open-source build packages and a checksum-pinned Android platform archive. AppId itself has no Internet permission.\n\n" +
+                "You can delete generated APKs and logs, reset AppId's private Termux workspace, clear app storage in Android settings, or uninstall AppId. Files copied separately into Termux or shared Downloads are not deleted by clearing AppId.\n\n" +
+                "Questions: https://focsd.com");
+    }
+
+    private void showLicense() {
+        showDocument("License",
+                "AppId is licensed under the Mozilla Public License 2.0 (MPL-2.0).\n\n" +
+                "You may use, modify, and distribute AppId, including commercially, subject to the MPL-2.0 terms.\n\n" +
+                "The application shell includes AndroidX AppCompat and Google Material Components, which are available under the Apache License 2.0.\n\n" +
+                "Third-party notices:\nhttps://github.com/focsd/appid/blob/main/docs/THIRD_PARTY_NOTICES.md\n\n" +
+                "The complete license is included with the source distribution:\n" +
+                "https://github.com/focsd/appid/blob/main/LICENSE\n\n" +
+                "Source code:\nhttps://github.com/focsd/appid");
+    }
+
+    private void showDocument(String title, String body) {
+        TextView content = text(body);
+        content.setTextSize(14f);
+        content.setTextIsSelectable(true);
+        content.setMovementMethod(new ScrollingMovementMethod());
+        content.setPadding(dp(4), dp(4), dp(4), dp(4));
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setView(scroll)
+                .setPositiveButton("Close", null)
                 .show();
     }
 
@@ -1561,7 +1620,7 @@ abstract class AppIdActivity extends Activity {
     }
 
     private Button button(String label, View.OnClickListener listener) {
-        Button b = new Button(this);
+        Button b = new MaterialButton(this);
         b.setText(label);
         b.setTextColor(ThemePalette.primaryText(this));
         b.setBackgroundTintList(ColorStateList.valueOf(ThemePalette.mutedSurface(this)));

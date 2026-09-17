@@ -11,13 +11,12 @@ def releaseSigningReady = [releaseKeystore, releaseKeyAlias, releaseStorePasswor
 
 android {
     namespace = 'com.focsd.appid'
-    compileSdk = 35
-    // Keep APK generation stable across upstream and F-Droid build environments.
-    buildToolsVersion = '35.0.0'
+    compileSdk = 36
+    buildToolsVersion = '36.1.0'
 
     dependenciesInfo {
-        // F-Droid rejects the Google Play SDK dependency payload as an extra
-        // APK signing block. The app has no production third-party dependencies.
+        // Keep dependency metadata out of the APK for reproducible upstream and
+        // F-Droid builds. The UI dependencies are free/open-source libraries.
         includeInApk = false
         includeInBundle = false
     }
@@ -25,7 +24,7 @@ android {
     defaultConfig {
         applicationId = 'com.focsd.appid'
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 31
         versionName = '0.12.1'
     }
@@ -60,7 +59,8 @@ android {
         warningsAsErrors = true
         // UI copy is currently intentionally English-only and built programmatically.
         disable += ['SetTextI18n']
-        // API 35 is the highest API officially supported by the pinned AGP 8.9 toolchain.
+        // Keep API 36 as the explicit Play target while the pinned AGP toolchain
+        // continues to treat newer platform APIs conservatively.
         disable += ['OldTargetApi']
     }
 }
@@ -96,6 +96,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 dependencies {
-    // The production APK remains Android-framework-only.
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
     testImplementation 'junit:junit:4.13.2'
 }

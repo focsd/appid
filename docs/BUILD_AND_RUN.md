@@ -20,7 +20,7 @@ shellcheck app/src/main/assets/*.sh scripts/*.sh
 `app/src/main/assets/` is the canonical Termux-script source. After editing one of
 those scripts, run `./scripts/sync_termux_scripts.sh`; CI rejects drift in the
 human-readable `termux/` copies. Lint treats new warnings as errors, excluding only
-the documented English-only programmatic UI text and the deliberate API 35 target.
+the documented English-only programmatic UI text and the deliberate API 36 target.
 Publisher-signed builds additionally require environment-backed signing
 credentials; unsigned F-Droid release builds do not. See
 [RELEASING.md](RELEASING.md).

@@ -1,22 +1,42 @@
 # AppId privacy policy
 
+**Effective date: September 17, 2026**
+
 AppId does not collect, transmit, sell, or share personal data. It contains no
-advertising, analytics, telemetry, tracking SDKs, or Internet permission.
+advertising, analytics, telemetry, tracking SDK, account system, or cloud
+synchronization.
 
-AppId can read the installed-application inventory. If the user explicitly grants
-Android Usage Access, it can also display device-reported screen time and storage
-usage. This information is processed locally and is not transmitted off the device.
+## Information processed on the device
 
-AppId sends commands to the separately installed Termux application only when the
-user requests an environment setup, dependency check, or placeholder build. Setup
-downloads open-source Termux packages and a checksum-pinned Android platform archive
-from the repositories described in the source code. Before setup starts, AppId shows
-what Termux may download and requires explicit confirmation. AppId can ask Android
-to install or uninstall an APK only after an explicit user action; Android displays
-its normal confirmation screen.
+AppId reads the installed-application inventory so you can choose an app to
+replace. If you explicitly grant Android Usage Access, AppId can display
+device-reported screen-time and storage information. This information is processed
+locally and is not sent to the developer or any third party.
 
-Build logs and generated APKs are stored locally in AppId's private storage. The
-user can view, copy, or delete them from the app. Optional copies in the shared
-Downloads folder remain under the user's control.
+Build logs, generated APKs, preferences, and imported Android platform sources are
+stored locally in AppId's private storage. Optional copies of generated APKs or
+platform files in shared Downloads remain under your control.
 
-Questions about this policy can be directed through https://focsd.com.
+## Termux and downloads
+
+When you explicitly request setup, dependency checking, or a placeholder build,
+AppId sends a command to the separately installed Termux application. Termux may
+download open-source build packages and a checksum-pinned Android platform archive
+from the repositories documented in the source code. AppId itself has no Internet
+permission and does not operate a network service.
+
+## Installation and deletion
+
+AppId asks Android to install or uninstall an APK only after an explicit user
+action; Android displays its normal confirmation screen. You can delete generated
+APKs and logs from the app, reset AppId's private Termux workspace, clear the app's
+storage in Android settings, or uninstall AppId. Files copied separately into
+Termux or shared Downloads are not deleted by clearing AppId.
+
+## Contact and policy changes
+
+Android and Termux are separate services governed by their own policies. We will
+update this policy before releasing a version whose data practices change.
+Questions can be sent through [focsd.com](https://focsd.com).
+
+The host-ready HTML copy is [`docs/privacy-policy.html`](docs/privacy-policy.html).
